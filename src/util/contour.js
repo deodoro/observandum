@@ -22,6 +22,8 @@ export default function generateContourData(u) {
         y: y,
         type: "contour",
         showscale: false,
+        autocontour: false,
+        ncontours: 20,
         contours: {
             coloring: 'lines' // Only show lines, no fills
         },
