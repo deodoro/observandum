@@ -1,0 +1,26 @@
+{
+  "name": "my-phaser-game",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node esbuild-serve.js",
+    "build": "node esbuild-build.js"
+  },
+  "dependencies": {
+    "esbuild-copy-static-files": "^0.1.0",
+    "live-server": "^1.2.2",
+    "phaser": "^3.55.2",
+    "plotly.js-dist-min": "^2.32.0"
+  },
+  "devDependencies": {
+    "assert": "^2.1.0",
+    "buffer": "^6.0.3",
+    "constants-browserify": "^1.0.0",
+    "esbuild": "^0.21.3",
+    "os-browserify": "^0.3.0",
+    "path-browserify": "^1.0.1",
+    "stream-browserify": "^3.0.0",
+    "util": "^0.12.5"
+  }
+}
