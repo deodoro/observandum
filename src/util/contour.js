@@ -1,8 +1,9 @@
 import Plotly from 'plotly.js-dist-min';
 
 const SIZE = 100;
+const DELTA = .01;
 
-export default function generateContourData(u) {
+export default function generateContourData(u, vv) {
     var x = new Array(SIZE),
         y = new Array(SIZE),
         z = new Array(SIZE),
@@ -11,26 +12,50 @@ export default function generateContourData(u) {
 
     var d = .01;
     for (var i = 0; i < SIZE; i++) {
-        x[i] = y[i] = d += .01;
+        x[i] = y[i] = d += .01
     }
 
+    zz = new Array(SIZE);
     x.forEach((v, i) => z[i] = y.map(t => u([v, t])));
+    x.forEach((v, i) => zz[i] = y.map(t => Math.abs(u([v, t]) - vv)));
 
-    return [{
-        z: z,
-        x: x,
-        y: y,
-        type: "contour",
-        showscale: false,
-        autocontour: false,
-        ncontours: 20,
-        contours: {
-            coloring: 'lines' // Only show lines, no fills
-        },
-        line: {
-            color: 'blue' // Set the contour lines color to blue
-        }
-    }];
+
+    if (vv == undefined) {
+        return [{
+            z: z,
+            x: x,
+            y: y,
+            type: "contour",
+            showscale: false,
+            autocontour: false,
+            ncontours: 20,
+            contours: {
+                coloring: 'lines',
+            },
+            line: {
+                color: 'blue'
+            }
+        }];
+    }
+    else {
+        return [{
+            z: z,
+            x: x,
+            y: y,
+            type: "contour",
+            showscale: false,
+            autocontour: false,
+            ncontours: 5,
+            contours: {
+                coloring: 'lines',
+                start: vv - DELTA,
+                end: vv + DELTA,
+            },
+            line: {
+                color: 'red'
+            }
+        }];
+    }
 }
 
 async function createEmptyPlotBitmap() {
@@ -47,9 +72,9 @@ async function createEmptyPlotBitmap() {
     });
 }
 
-async function createContourPlotBitmap(u, inverted = false) {
+async function createContourPlotBitmap(inverted = false, u, v) {
     return new Promise((resolve, reject) => {
-        const data = generateContourData(u);
+        const data = generateContourData(u, v);
         const layout = {
             xaxis: {
                 visible: false

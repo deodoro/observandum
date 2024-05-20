@@ -35,6 +35,10 @@ class Individual {
     MRS(bundle = this.endowment, i = 0, j = 1) {
         return marginalUtility(this.utility, bundle, i) / marginalUtility(this.utility, bundle, j);
     }
+
+    getEndowment() {
+        return this.endowment;
+    }
 }
 
-export default Individual;
+export {Individual};
