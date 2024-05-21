@@ -163,3 +163,21 @@ function gen_contour(u, v) {
 
     return isoLines(z, levels);
 }
+
+
+// # Update the endowment
+// if frame_count % 15 == 0:
+//     if do_move_c1:
+//         t1 = c1.endowment.copy()
+//         v1 = c1.best_trade()
+//         c1.endowment = [i + j for (i,j) in zip(c1.endowment, c1.best_trade())]
+//         # print("c1: ", t1, " + ", v1, " -> ", c1.endowment)
+//         do_move_c1 = False
+
+//     if do_move_c2:
+//         t2 = c2.endowment.copy()
+//         v2 = c2.best_trade()
+//         c2.endowment = [i + j for (i,j) in zip(c2.endowment, c2.best_trade())]
+//         # print("c2: ", t2, " + ", v2, " -> ", c2.endowment)
+//         do_move_c2 = False
+//         # print("c1: ", c1.endowment, " c2: ", c2.endowment, "\n\n")
