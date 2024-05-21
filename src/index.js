@@ -14,6 +14,8 @@ var z_gen;
 var do_trade = false;
 var frame_count = 0;
 var turn = 0;
+var cache = {};
+var history = [];
 
 const config = {
     type: Phaser.AUTO,
@@ -37,6 +39,8 @@ async function createTexture(inverted, u, v) {
 async function preload() {
     c1 = new Individual([800, 200], COBB_DOUGLAS([.25, .75]));
     c2 = new Individual([200, 800], COBB_DOUGLAS([.75, .25]));
+    cache['c1'] = c1.utility;
+    cache['c2'] = c2.utility;
 }
 
 async function create() {
@@ -54,23 +58,33 @@ async function create() {
 
     const label_1 = this.add.text(circle.x, circle.y + circle.radius + 10, '-', {
         fontSize: '12px',
-        fill: '#0000ff',
+        fill: '#2d4ebb',
         align: 'center',
-        FontFace: 'sans-serif'
+        fontFamily: 'sans-serif'
     }).setOrigin(0.5, 0.5);
     this.label_1 = label_1;
     this.label_1.text = `[${c1.getEndowment().join(',')}]`;
 
     const label_2 = this.add.text(circle.x, circle.y - circle.radius - 10, '-', {
         fontSize: '12px',
-        fill: '#00ff00',
+        fill: '#305d04',
         align: 'center',
-        FontFace: 'sans-serif'
+        fontFamily: 'sans-serif'
     }).setOrigin(0.5, 0.5);
     this.label_2 = label_2;
     this.label_2.text = `[${c2.getEndowment().join(',')}]`;
 
-    this.cameras.main.setBackgroundColor('#efefef');
+    const label_price = this.add.text(700, 550, 'Price', {
+        fontSize: '20px',
+        fill: '#305d04',
+        align: 'center',
+        fontFamily: 'sans-serif'
+    }).setOrigin(0.5, 0.5);
+    this.label_price = label_price;
+    this.label_price.visible = false;
+    // this.label_price.text = `[${c2.getEndowment().join(',')}]`;
+
+    this.cameras.main.setBackgroundColor('#c2b8aa');
 
     this.input.on('pointerdown', pointer => {
     });
@@ -85,19 +99,28 @@ async function create() {
     }
 
     this.input.on('pointerdown', function (pointer) {
-        lastPrintTime = Date.now();
         isMousePressed = true;
+        lastPrintTime = Date.now();
     });
 
-    this.input.on('pointerup', function () {
+    this.input.on('pointerup', (pointer) => {
+        const currentTime = Date.now();
+        if (!do_trade && isMousePressed && (currentTime - lastPrintTime >= 50)) { // 5000 ms = 5 seconds
+            setEntitlements(pointer);
+            lastPrintTime = currentTime;
+            history = [];
+            this.label_price.visible = false;
+        }
         isMousePressed = false;
     });
 
-    this.input.on('pointermove', function (pointer) {
+    this.input.on('pointermove', (pointer) => {
         const currentTime = Date.now();
-        if (isMousePressed && (currentTime - lastPrintTime >= 50)) { // 5000 ms = 5 seconds
+        if (!do_trade && isMousePressed && (currentTime - lastPrintTime >= 50)) { // 5000 ms = 5 seconds
             setEntitlements(pointer);
             lastPrintTime = currentTime;
+            history = [];
+            this.label_price.visible = false;
         }
     });
 
@@ -108,8 +131,10 @@ async function create() {
         fontFamily: 'sans-serif'
     }).setInteractive();
 
-    button.on('pointerdown', function () {
+    button.on('pointerdown', () => {
         do_trade = true;
+        history = [];
+        this.label_price.visible = true;
     });
 }
 
@@ -117,7 +142,7 @@ function draw_contours(graphics, u, color, translate) {
     graphics.lineStyle(0.5, color, 1.0);
     gen_contour(u).forEach((v) => {
         v.forEach((z) => {
-            const u = z.map((v) => translate(v));
+            const u = z.map(translate);
             graphics.beginPath();
             graphics.moveTo(...u.shift());
             u.forEach((v) => graphics.lineTo(...v));
@@ -127,10 +152,10 @@ function draw_contours(graphics, u, color, translate) {
 }
 
 function draw_single_curve(graphics, u, color, translate, v) {
-    graphics.lineStyle(1, color, 1.0);
+    graphics.lineStyle(1.5, color, 1.0);
     gen_contour(u, v).forEach((v) => {
         v.forEach((z) => {
-            const u = z.map((v) => translate(v));
+            const u = z.map(translate);
             graphics.beginPath();
             graphics.moveTo(...u.shift());
             u.forEach((v) => graphics.lineTo(...v));
@@ -143,21 +168,9 @@ function update() {
     if (this.graphics) {
         this.graphics.clear();
 
-        circle.x = c1.getEndowment()[0] * 800 / SCALE;
-        circle.y = (SCALE - c1.getEndowment()[1]) * 600 / SCALE;
-        this.label_1.setPosition(circle.x, circle.y + circle.radius + 10);
-        this.label_2.setPosition(circle.x, circle.y - circle.radius - 10);
-        this.graphics.fillStyle(0xff00ff, 1);
-        this.graphics.fillCircleShape(circle);
-
         const SCALE2 = 95;
-        draw_contours(this.graphics, c1.utility, 0x0000ff, a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2]);
-        draw_contours(this.graphics, c2.utility, 0x00ff00, a => [(SCALE2 - a[0]) * 800 / SCALE2, (a[1]) * 600 / SCALE2]);
-
-        // Requires to reduce 5% of utility to get the lines in place
-        // Otherwise it will overshoot vertical for c1, horizontal for c2 in the top corners
-        draw_single_curve(this.graphics, c1.utility, 0xff0000, a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2], c1.utility(c1.getEndowment()) * .95);
-        draw_single_curve(this.graphics, c2.utility, 0xff0000, a => [(SCALE2 - a[0]) * 800 / SCALE2, a[1] * 600 / SCALE2], c2.utility(c2.getEndowment()) * .95);
+        draw_contours(this.graphics, 'c1', 0x2d4ebb, a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2]);
+        draw_contours(this.graphics, 'c2', 0x305d04, a => [(SCALE2 - a[0]) * 800 / SCALE2, (a[1]) * 600 / SCALE2]);
 
         if (do_trade) {
             var bid_accepted = false;
@@ -165,7 +178,7 @@ function update() {
             if (turn === 0) {
                 const bid = c1.bestTrade();
                 if (c2.evaluate(negative(bid))) {
-                    console.log(`c1 bids [${bid}]`);
+                    // console.log(`c1 bids [${bid}]`);
                     c1.trade(bid);
                     c2.trade(negative(bid));
                     this.label_1.text = `[${c1.getEndowment().join(',')}]=${Math.round(c1.utility(c1.getEndowment()),2)}`;
@@ -176,7 +189,7 @@ function update() {
             else {
                 const bid = c2.bestTrade();
                 if (c1.evaluate(negative(bid))) {
-                    console.log(`c2 bids [${bid}]`);
+                    // console.log(`c2 bids [${bid}]`);
                     c2.trade(bid);
                     c1.trade(negative(bid));
                     this.label_1.text = `[${c1.getEndowment().join(',')}]=${Math.round(c1.utility(c1.getEndowment()),2)}`;
@@ -189,13 +202,49 @@ function update() {
                 console.log('No more trades possible');
                 do_trade = false;
             }
+
+            history.push([circle.x, circle.y]);
         }
+
+        if (history.length > 1) {
+            this.graphics.lineStyle(1, 0xFFFFFF, .5);
+            for (var i = 0; i < history.length - 1; i++) {
+                this.graphics.beginPath();
+                this.graphics.moveTo(history[i][0], history[i][1]);
+                this.graphics.lineTo(history[i + 1][0], history[i + 1][1]);
+                this.graphics.strokePath();
+            }
+        }
+
+        // Requires to reduce 5% of utility to get the lines in place
+        // Otherwise it will overshoot vertical for c1, horizontal for c2 in the top corners
+        // PS: I can't explain it, can you?
+        draw_single_curve(this.graphics, 'c1', 0x2d4ebb, a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2], c1.utility(c1.getEndowment()) * .95);
+        draw_single_curve(this.graphics, 'c2', 0x305d04, a => [(SCALE2 - a[0]) * 800 / SCALE2, a[1] * 600 / SCALE2], c2.utility(c2.getEndowment()) * .95);
+
+        circle.x = c1.getEndowment()[0] * 800 / SCALE;
+        circle.y = (SCALE - c1.getEndowment()[1]) * 600 / SCALE;
+        this.label_1.setPosition(circle.x, circle.y + circle.radius + 10);
+        this.label_2.setPosition(circle.x, circle.y - circle.radius - 10);
+        this.graphics.fillStyle(0xff00ff, 1);
+        this.graphics.fillCircleShape(circle);
+
         frame_count++;
     }
 }
 
+const cache_map = {};
+
+function get_function(u) {
+    if (cache_map[u] === undefined) {
+        console.log("load");
+        cache_map[u] = x_gen.map((v, i) => y_gen.map(t => cache[u]([t, v])))
+    }
+    return cache_map[u]
+}
+
 function gen_contour(u, v) {
-    const z = x_gen.map((v, i) => y_gen.map(t => u([t, v])));
+    const z = get_function(u);
     const max = Math.max(...z.flat());
     const min = Math.min(...z.flat());
     var levels = [];
