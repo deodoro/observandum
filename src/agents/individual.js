@@ -39,6 +39,10 @@ class Individual {
     getEndowment() {
         return this.endowment;
     }
+
+    setEndowment(e) {
+        this.endowment = e;
+    }
 }
 
 export {Individual};

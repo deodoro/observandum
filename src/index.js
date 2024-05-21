@@ -1,6 +1,6 @@
 import Phaser from 'phaser';
 import { createContourPlotBitmap } from './util/contour';
-import { COBB_DOUGLAS } from './artifacts/utility';
+import { COBB_DOUGLAS, negative } from './artifacts/utility';
 import { Individual } from './agents/individual';
 import { isoLines } from 'marchingsquares';
 import { last } from 'lodash';
@@ -11,6 +11,9 @@ const DELTA = 10;
 const x_gen = new Array(SIZE);
 const y_gen = new Array(SIZE);
 var z_gen;
+var do_trade = false;
+var frame_count = 0;
+var turn = 0;
 
 const config = {
     type: Phaser.AUTO,
@@ -97,6 +100,17 @@ async function create() {
             lastPrintTime = currentTime;
         }
     });
+
+    do_trade = false;
+    const button = this.add.text(700, 50, 'Trade', {
+        fontSize: '20px',
+        fill: '#ff0000',
+        fontFamily: 'sans-serif'
+    }).setInteractive();
+
+    button.on('pointerdown', function () {
+        do_trade = true;
+    });
 }
 
 function draw_contours(graphics, u, color, translate) {
@@ -144,6 +158,39 @@ function update() {
         // Otherwise it will overshoot vertical for c1, horizontal for c2 in the top corners
         draw_single_curve(this.graphics, c1.utility, 0xff0000, a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2], c1.utility(c1.getEndowment()) * .95);
         draw_single_curve(this.graphics, c2.utility, 0xff0000, a => [(SCALE2 - a[0]) * 800 / SCALE2, a[1] * 600 / SCALE2], c2.utility(c2.getEndowment()) * .95);
+
+        if (do_trade) {
+            var bid_accepted = false;
+
+            if (turn === 0) {
+                const bid = c1.bestTrade();
+                if (c2.evaluate(negative(bid))) {
+                    console.log(`c1 bids [${bid}]`);
+                    c1.trade(bid);
+                    c2.trade(negative(bid));
+                    this.label_1.text = `[${c1.getEndowment().join(',')}]=${Math.round(c1.utility(c1.getEndowment()),2)}`;
+                    this.label_2.text = `[${c2.getEndowment().join(',')}]=${Math.round(c2.utility(c2.getEndowment()),2)}`;
+                    bid_accepted = true;
+                }
+            }
+            else {
+                const bid = c2.bestTrade();
+                if (c1.evaluate(negative(bid))) {
+                    console.log(`c2 bids [${bid}]`);
+                    c2.trade(bid);
+                    c1.trade(negative(bid));
+                    this.label_1.text = `[${c1.getEndowment().join(',')}]=${Math.round(c1.utility(c1.getEndowment()),2)}`;
+                    this.label_2.text = `[${c2.getEndowment().join(',')}]=${Math.round(c2.utility(c2.getEndowment()),2)}`;
+                    bid_accepted = true;
+                }
+            }
+            turn = 1 - turn;
+            if (!bid_accepted) {
+                console.log('No more trades possible');
+                do_trade = false;
+            }
+        }
+        frame_count++;
     }
 }
 
@@ -163,21 +210,3 @@ function gen_contour(u, v) {
 
     return isoLines(z, levels);
 }
-
-
-// # Update the endowment
-// if frame_count % 15 == 0:
-//     if do_move_c1:
-//         t1 = c1.endowment.copy()
-//         v1 = c1.best_trade()
-//         c1.endowment = [i + j for (i,j) in zip(c1.endowment, c1.best_trade())]
-//         # print("c1: ", t1, " + ", v1, " -> ", c1.endowment)
-//         do_move_c1 = False
-
-//     if do_move_c2:
-//         t2 = c2.endowment.copy()
-//         v2 = c2.best_trade()
-//         c2.endowment = [i + j for (i,j) in zip(c2.endowment, c2.best_trade())]
-//         # print("c2: ", t2, " + ", v2, " -> ", c2.endowment)
-//         do_move_c2 = False
-//         # print("c1: ", c1.endowment, " c2: ", c2.endowment, "\n\n")

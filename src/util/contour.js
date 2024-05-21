@@ -1,4 +1,4 @@
-import Plotly from 'plotly.js-dist-min';
+// import Plotly from 'plotly.js-dist-min';
 
 const SCALE = 1000;
 const SIZE = 100;

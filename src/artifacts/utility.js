@@ -1,7 +1,7 @@
 import { pow } from 'math';
 import { reduce } from 'lodash';
 
-const DELTA = 0.001;
+const DELTA = 1;
 // const DELTA = 1e-6;
 
 const notZero = (x) => x.map(i => i !== 0 ? i : 1e-10);
