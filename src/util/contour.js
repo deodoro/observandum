@@ -1,7 +1,8 @@
 import Plotly from 'plotly.js-dist-min';
 
+const SCALE = 1000;
 const SIZE = 100;
-const DELTA = .01;
+const DELTA = 10;
 
 export default function generateContourData(u, vv) {
     var x = new Array(SIZE),
@@ -19,7 +20,6 @@ export default function generateContourData(u, vv) {
     x.forEach((v, i) => z[i] = y.map(t => u([v, t])));
     x.forEach((v, i) => zz[i] = y.map(t => Math.abs(u([v, t]) - vv)));
 
-
     if (vv == undefined) {
         return [{
             z: z,
@@ -28,7 +28,7 @@ export default function generateContourData(u, vv) {
             type: "contour",
             showscale: false,
             autocontour: false,
-            ncontours: 20,
+            ncontours: 40,
             contours: {
                 coloring: 'lines',
             },

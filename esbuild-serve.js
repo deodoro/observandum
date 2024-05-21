@@ -2,6 +2,7 @@ const esbuild = require('esbuild');
 const liveServer = require('live-server');
 const chokidar = require('chokidar');
 const copyStaticFiles = require('esbuild-copy-static-files');
+const { wasmLoader } = require('esbuild-plugin-wasm');
 
 const buildOptions = {
   entryPoints: ['src/index.js'],
@@ -17,6 +18,7 @@ const buildOptions = {
       src: 'assets',
       dest: 'dist/assets',
     }),
+    wasmLoader(),
   ],
 };
 
