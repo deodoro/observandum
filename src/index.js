@@ -46,8 +46,6 @@ async function addIndividual(individual, translate) {
 }
 
 async function preload() {
-    addIndividual(new Individual([800, 200], COBB_DOUGLAS([.25, .75]), name='c1', color = 0x2d4ebb), translate = a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2]);
-    addIndividual(new Individual([200, 800], COBB_DOUGLAS([.75, .25]), name='c2', color = 0x305d04), translate = a => [(SCALE2 - a[0]) * 800 / SCALE2, a[1] * 600 / SCALE2]);
 }
 
 async function create() {
@@ -71,7 +69,6 @@ async function create() {
         fontFamily: 'sans-serif'
     }).setOrigin(0.5, 0.5);
     this.label_1 = label_1;
-    // this.label_1.text = `[${c1.getEndowment().join(',')}]`;
 
     const label_2 = this.add.text(circle.x, circle.y - circle.radius - 10, '-', {
         fontSize: '12px',
@@ -80,7 +77,6 @@ async function create() {
         fontFamily: 'sans-serif'
     }).setOrigin(0.5, 0.5);
     this.label_2 = label_2;
-    // this.label_2.text = `[${c2.getEndowment().join(',')}]`;
 
     const label_price = this.add.text(711, 550, 'Spot:', {
         fontSize: '20px',
@@ -107,15 +103,23 @@ async function create() {
 
     let isMousePressed = false;
     let lastPrintTime = 0;
-    let setEntitlements = pointer => {
+    let setEntitlements = ({x,y}) => {
         people = [];
-        addIndividual(new Individual([Math.trunc(1000 * (pointer.x / 800)) , 1000 - Math.trunc(1000 * pointer.y / 600)], COBB_DOUGLAS([.25, .75]), name='c1', color = 0x2d4ebb), translate = a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2]);
-        addIndividual(new Individual([1000 - Math.trunc(1000 * (pointer.x / 800)) , Math.trunc(1000 * pointer.y / 600)], COBB_DOUGLAS([.75, .25]), name='c2', color = 0x305d04), translate = a => [(SCALE2 - a[0]) * 800 / SCALE2, a[1] * 600 / SCALE2]);
+        addIndividual(new Individual([x, y], COBB_DOUGLAS([.25, .75]), name='c1', color = 0x2d4ebb), translate = a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2]);
+        addIndividual(new Individual([1000-x, 1000-y], COBB_DOUGLAS([.75, .25]), name='c2', color = 0x305d04), translate = a => [(SCALE2 - a[0]) * 800 / SCALE2, a[1] * 600 / SCALE2]);
+        console.dir(people[1]);
         const c1 = people[0].individual;
         const c2 = people[1].individual;
         this.label_1.text = `[${c1.getEndowment().join(',')}]=${Math.round(c1.utility(c1.getEndowment()),2)}`;
         this.label_2.text = `[${c2.getEndowment().join(',')}]=${Math.round(c2.utility(c2.getEndowment()),2)}`;
+        this.label_1.visible = true;
+        this.label_2.visible = true;
     }
+    let setEntitlementsPtr = pointer => {
+        setEntitlements({x: [Math.trunc(1000 * (pointer.x / 800)) , 1000 - Math.trunc(1000 * pointer.y / 600)], y: [1000 - Math.trunc(1000 * (pointer.x / 800)) , Math.trunc(1000 * pointer.y / 600)]});
+    };
+
+    setEntitlements({x: 800, y: 200});
 
     this.input.on('pointerdown', function (pointer) {
         isMousePressed = true;
@@ -125,7 +129,7 @@ async function create() {
     this.input.on('pointerup', (pointer) => {
         const currentTime = Date.now();
         if (!do_trade && isMousePressed && (currentTime - lastPrintTime >= 50)) { // 5000 ms = 5 seconds
-            setEntitlements(pointer);
+            setEntitlementsPtr(pointer);
             lastPrintTime = currentTime;
             history = [];
             bids = []
@@ -138,7 +142,7 @@ async function create() {
     this.input.on('pointermove', (pointer) => {
         const currentTime = Date.now();
         if (!do_trade && isMousePressed && (currentTime - lastPrintTime >= 50)) { // 5000 ms = 5 seconds
-            setEntitlements(pointer);
+            setEntitlementsPtr(pointer);
             lastPrintTime = currentTime;
             history = [];
             bids = []
