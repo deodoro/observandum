@@ -6,6 +6,7 @@ import { isoBands, isoLines } from 'marchingsquares';
 import { last } from 'lodash';
 
 const SCALE = 1000;
+const SCALE2 = 95;
 const SIZE = 100;
 const DELTA = 10;
 const x_gen = new Array(SIZE);
@@ -14,7 +15,8 @@ var z_gen;
 var do_trade = false;
 var frame_count = 0;
 var turn = 0;
-var cache = {};
+const cache = {};
+const cache_map = {};
 var history = [];
 var bids = []
 
@@ -30,18 +32,21 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
-var c1, c2;
+var people = [];
 
 async function createTexture(inverted, u, v) {
     const canvas = await createContourPlotBitmap(inverted, u, v);
     return canvas.toDataURL();
 }
 
+async function addIndividual(individual, translate) {
+    cache[individual.getName()] = individual.utility;
+    people.push({individual, translate});
+}
+
 async function preload() {
-    c1 = new Individual([800, 200], COBB_DOUGLAS([.25, .75]));
-    c2 = new Individual([200, 800], COBB_DOUGLAS([.75, .25]));
-    cache['c1'] = c1.utility;
-    cache['c2'] = c2.utility;
+    addIndividual(new Individual([800, 200], COBB_DOUGLAS([.25, .75]), name='c1', color = 0x2d4ebb), translate = a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2]);
+    addIndividual(new Individual([200, 800], COBB_DOUGLAS([.75, .25]), name='c2', color = 0x305d04), translate = a => [(SCALE2 - a[0]) * 800 / SCALE2, a[1] * 600 / SCALE2]);
 }
 
 async function create() {
@@ -50,7 +55,8 @@ async function create() {
         x_gen[i] = y_gen[i] = d;
         d += DELTA;
     }
-    z_gen = x_gen.map((v, i) => y_gen.map(t => c1.utility([v,t])))
+    // z_gen = x_gen.map((v, i) => y_gen.map(t => c1.utility([v,t])))
+
     const graphics = this.add.graphics();
     this.graphics = graphics;
     circle = new Phaser.Geom.Circle(400, 300, 5);
@@ -64,30 +70,30 @@ async function create() {
         fontFamily: 'sans-serif'
     }).setOrigin(0.5, 0.5);
     this.label_1 = label_1;
-    this.label_1.text = `[${c1.getEndowment().join(',')}]`;
+    // this.label_1.text = `[${c1.getEndowment().join(',')}]`;
 
     const label_2 = this.add.text(circle.x, circle.y - circle.radius - 10, '-', {
         fontSize: '12px',
-        fill: '#305d04',
+        fill: '#437e07',
         align: 'center',
         fontFamily: 'sans-serif'
     }).setOrigin(0.5, 0.5);
     this.label_2 = label_2;
-    this.label_2.text = `[${c2.getEndowment().join(',')}]`;
+    // this.label_2.text = `[${c2.getEndowment().join(',')}]`;
 
-    const label_price = this.add.text(700, 550, 'Price', {
+    const label_price = this.add.text(711, 550, 'Spot:', {
         fontSize: '20px',
-        fill: '#305d04',
-        align: 'center',
+        fill: '#f0f0f0',
+        align: 'left',
         fontFamily: 'sans-serif'
     }).setOrigin(0.5, 0.5);
     this.label_price = label_price;
     this.label_price.visible = false;
 
-    const label_price_accum = this.add.text(700, 500, 'Accum', {
+    const label_price_accum = this.add.text(700, 530, 'Accum:', {
         fontSize: '20px',
-        fill: '#305d04',
-        align: 'center',
+        fill: '#f0f0f0',
+        align: 'left',
         fontFamily: 'sans-serif'
     }).setOrigin(0.5, 0.5);
     this.label_price_accum = label_price_accum;
@@ -101,8 +107,12 @@ async function create() {
     let isMousePressed = false;
     let lastPrintTime = 0;
     let setEntitlements = pointer => {
-        c1 = new Individual([Math.trunc(1000 * (pointer.x / 800)) , 1000 - Math.trunc(1000 * pointer.y / 600)], COBB_DOUGLAS([.25, .75]));
-        c2 = new Individual([1000 - Math.trunc(1000 * (pointer.x / 800)) , Math.trunc(1000 * pointer.y / 600)], COBB_DOUGLAS([.75, .25]));
+        people = [];
+
+        addIndividual(new Individual([Math.trunc(1000 * (pointer.x / 800)) , 1000 - Math.trunc(1000 * pointer.y / 600)], COBB_DOUGLAS([.25, .75]), name='c1', color = 0x2d4ebb), translate = a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2]);
+        addIndividual(new Individual([1000 - Math.trunc(1000 * (pointer.x / 800)) , Math.trunc(1000 * pointer.y / 600)], COBB_DOUGLAS([.75, .25]), name='c2', color = 0x305d04), translate = a => [(SCALE2 - a[0]) * 800 / SCALE2, a[1] * 600 / SCALE2]);
+        const c1 = people[0].individual;
+        const c2 = people[1].individual;
         this.label_1.text = `[${c1.getEndowment().join(',')}]=${Math.round(c1.utility(c1.getEndowment()),2)}`;
         this.label_2.text = `[${c2.getEndowment().join(',')}]=${Math.round(c2.utility(c2.getEndowment()),2)}`;
     }
@@ -137,7 +147,6 @@ async function create() {
         }
     });
 
-    do_trade = false;
     const button = this.add.text(700, 50, 'Trade', {
         fontSize: '20px',
         fill: '#ff0000',
@@ -153,80 +162,27 @@ async function create() {
     });
 }
 
-function draw_contours(graphics, u, color, translate) {
-    var i = 0;
-    gen_contour(u).forEach((v) => {
-        v.forEach((z) => {
-            const u = z.map(translate);
-            graphics.lineStyle(0.5, color, 1.0);
-            graphics.beginPath();
-            graphics.moveTo(...u.shift());
-            u.forEach((v) => graphics.lineTo(...v));
-            graphics.strokePath();
-        });
-    });
-}
-
-var flag = true;
-
-function draw_single_curve(graphics, u, color, translate, v) {
-    graphics.lineStyle(4, color, .5);
-    graphics.fillStyle('#ff0000', 0.2);
-    gen_contour(u, v).forEach((v) => {
-        v.forEach((z) => {
-            const u = z.map(translate);
-            graphics.beginPath();
-            graphics.moveTo(...u.shift());
-            u.forEach((v) => graphics.lineTo(...v));
-            graphics.strokePath();
-            graphics.fillPath();
-        });
-    });
-}
-
 function update() {
     if (this.graphics) {
+        const c1 = people[0].individual;
+        const c2 = people[1].individual;
         this.graphics.clear();
 
-        const SCALE2 = 95;
-        draw_contours(this.graphics, 'c1', 0x2d4ebb, a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2]);
-        draw_contours(this.graphics, 'c2', 0x305d04, a => [(SCALE2 - a[0]) * 800 / SCALE2, (a[1]) * 600 / SCALE2]);
+        people.forEach(({individual, translate}) => {
+                draw_contours(this.graphics, individual, translate);
+        });
 
         if (do_trade) {
             const round_n = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
             var bid_accepted = false;
-
-            if (turn === 0) {
-                const bid = c1.bestTrade();
-                if (c2.evaluate(negative(bid))) {
-                    // console.log(`c1 bids [${bid}]`);
-                    c1.trade(bid);
-                    c2.trade(negative(bid));
-                    this.label_1.text = `[${c1.getEndowment().join(',')}]=${Math.round(c1.utility(c1.getEndowment()),2)}`;
-                    this.label_2.text = `[${c2.getEndowment().join(',')}]=${Math.round(c2.utility(c2.getEndowment()),2)}`;
-                    bid_accepted = true;
-                    bids.push(bid.map(Math.abs));
-                    const q_x = bids.reduce((acc, val) => acc + val[0], 0);
-                    const q_y = bids.reduce((acc, val) => acc + val[1], 0);
-                    this.label_price.text = `Spot: 1:${round_n(bids[bids.length - 1][1]/bids[bids.length - 1][0])}`;
-                    this.label_price_accum.text = `Accum: 1:${round_n(q_y/q_x)}`;
-                }
-            }
-            else {
-                const bid = c2.bestTrade();
-                if (c1.evaluate(negative(bid))) {
-                    // console.log(`c2 bids [${bid}]`);
-                    c2.trade(bid);
-                    c1.trade(negative(bid));
-                    this.label_1.text = `[${c1.getEndowment().join(',')}]=${Math.round(c1.utility(c1.getEndowment()),2)}`;
-                    this.label_2.text = `[${c2.getEndowment().join(',')}]=${Math.round(c2.utility(c2.getEndowment()),2)}`;
-                    bid_accepted = true;
-                    bids.push(bid.map(Math.abs));
-                    const q_x = bids.reduce((acc, val) => acc + val[0], 0);
-                    const q_y = bids.reduce((acc, val) => acc + val[1], 0);
-                    this.label_price.text = `Spot: 1:${round_n(bids[bids.length - 1][1]/bids[bids.length - 1][0])}`;
-                    this.label_price_accum.text = `Accum: 1:${round_n(q_y/q_x)}`;
-                }
+            var proposer = people[turn].individual;
+            var counterpart = people[1-turn].individual;
+            const bid = proposer.bestTrade();
+            if (counterpart.evaluate(negative(bid))) {
+                proposer.trade(bid);
+                counterpart.trade(negative(bid));
+                bid_accepted = true;
+                bids.push({'proposer': proposer.getName(), 'bid': bid});
             }
             turn = 1 - turn;
             if (!bid_accepted) {
@@ -234,15 +190,23 @@ function update() {
                 console.dir(bids);
                 do_trade = false;
             }
-            else
+            else {
+                this.label_1.text = `[${c1.getEndowment().join(',')}]=${Math.round(c1.utility(c1.getEndowment()),2)}`;
+                this.label_2.text = `[${c2.getEndowment().join(',')}]=${Math.round(c2.utility(c2.getEndowment()),2)}`;
+                const q_x = bids.reduce((acc, val) => acc + val['bid'][0], 0);
+                const q_y = bids.reduce((acc, val) => acc + val['bid'][1], 0);
+                this.label_price.text = `Spot: 1:${Math.abs(round_n(bids[bids.length - 1]['bid'][1]/bids[bids.length - 1]['bid'][0]))}`;
+                this.label_price_accum.text = `Accum: 1:${round_n(q_y/q_x)}`;
                 history.push([circle.x, circle.y]);
+            }
         }
 
         // Requires to reduce 5% of utility to get the lines in place
         // Otherwise it will overshoot vertical for c1, horizontal for c2 in the top corners
         // PS: I can't explain it, can you?
-        draw_single_curve(this.graphics, 'c1', 0x2d4ebb, a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2], c1.utility(c1.getEndowment()) * .95);
-        draw_single_curve(this.graphics, 'c2', 0x305d04, a => [(SCALE2 - a[0]) * 800 / SCALE2, a[1] * 600 / SCALE2], c2.utility(c2.getEndowment()) * .95);
+        people.forEach(({individual, translate}) => {
+            draw_single_curve(this.graphics, individual, translate, individual.utility(individual.getEndowment()) * .95);
+        });
 
         if (history.length > 1) {
             this.graphics.lineStyle(1, 0xFFFFFF, .5);
@@ -265,16 +229,15 @@ function update() {
     }
 }
 
-const cache_map = {};
-
-function get_function(u) {
-    if (cache_map[u] === undefined)
-        cache_map[u] = x_gen.map((v, i) => y_gen.map(t => cache[u]([t, v])))
-    return cache_map[u]
+function get_function(u, key) {
+    if (cache_map[key] === undefined) {
+        cache_map[key] = x_gen.map((v, i) => y_gen.map(t => u([t, v])))
+    }
+    return cache_map[key]
 }
 
-function gen_contour(u, v) {
-    const z = get_function(u);
+function gen_contour(u, k, v) {
+    const z = get_function(u,k);
     const max = Math.max(...z.flat());
     const min = Math.min(...z.flat());
     var levels = [];
@@ -286,17 +249,34 @@ function gen_contour(u, v) {
     } else {
         levels = [v];
     }
-
     return isoLines(z, levels);
 }
 
-function gen_bands(u, v) {
-    const z = get_function(u);
-    const max = Math.max(...z.flat());
-    const min = Math.min(...z.flat());
-    var levels = [];
+function draw_contours(graphics, individual, translate) {
+    var i = 0;
+    gen_contour(individual.getUtility(), individual.getName()).forEach((v) => {
+        v.forEach((z) => {
+            const u = z.map(translate);
+            graphics.lineStyle(0.5, individual.getColor(), 1.0);
+            graphics.beginPath();
+            graphics.moveTo(...u.shift());
+            u.forEach((v) => graphics.lineTo(...v));
+            graphics.strokePath();
+        });
+    });
+}
 
-    levels = [v];
-
-    return isoBands(z, v, max - v, {polygons: true});
+function draw_single_curve(graphics, individual, translate, utility_level) {
+    graphics.lineStyle(1.5, individual.getColor(), 1.0);
+    graphics.fillStyle('#ff0000', 0.2);
+    gen_contour(individual.getUtility(), individual.getName(), utility_level).forEach((v) => {
+        v.forEach((z) => {
+            const u = z.map(translate);
+            graphics.beginPath();
+            graphics.moveTo(...u.shift());
+            u.forEach((v) => graphics.lineTo(...v));
+            graphics.strokePath();
+            graphics.fillPath();
+        });
+    });
 }

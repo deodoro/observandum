@@ -7,9 +7,17 @@ const argmax = (arr) => {
 };
 
 class Individual {
-    constructor(endowment, u = DYN_HOM_COBB_DOUGLAS) {
+    constructor(endowment, u = DYN_HOM_COBB_DOUGLAS, name, color) {
         this.endowment = endowment;
         this.utility = u;
+        if (name === undefined)
+            this.name = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        else
+            this.name = name;
+        if (color === undefined)
+            this.color = 0x000000 + Math.random() * 0xffffff;
+        else
+            this.color = color;
     }
 
     evaluate(bid) {
@@ -42,6 +50,18 @@ class Individual {
 
     setEndowment(e) {
         this.endowment = e;
+    }
+
+    getName() {
+        return this.name;
+    }
+
+    getColor() {
+        return this.color;
+    }
+
+    getUtility() {
+        return this.utility;
     }
 }
 
