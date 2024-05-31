@@ -1,25 +1,20 @@
 import Phaser from 'phaser';
-import { createContourPlotBitmap } from './util/contour';
 import { COBB_DOUGLAS, negative } from './artifacts/utility';
 import { Individual } from './agents/individual';
-import { isoBands, isoLines } from 'marchingsquares';
 import { last } from 'lodash';
 import { round } from 'math';
+import { draw_contours } from './util/contour';
 
-const SCALE = 1000;
-const SCALE2 = 95;
-const SIZE = 100;
-const DELTA = 10;
-const x_gen = new Array(SIZE);
-const y_gen = new Array(SIZE);
-var z_gen;
+const MAX_ENDOWMENT = 1000;
+const DENSITY = 90; // Isoline density
 var do_trade = false;
 var frame_count = 0;
 var turn = 0;
-const cache = {};
-const cache_map = {};
 var history = [];
-var bids = []
+var bids = [];
+var circle;
+var new_circle;
+var on_off = 0;
 
 const config = {
     type: Phaser.AUTO,
@@ -35,13 +30,7 @@ const config = {
 const game = new Phaser.Game(config);
 var people = [];
 
-async function createTexture(inverted, u, v) {
-    const canvas = await createContourPlotBitmap(inverted, u, v);
-    return canvas.toDataURL();
-}
-
 async function addIndividual(individual, translate) {
-    cache[individual.getName()] = individual.utility;
     people.push({individual, translate});
 }
 
@@ -49,13 +38,6 @@ async function preload() {
 }
 
 async function create() {
-    var d = 0;
-    for (var i = 0; i < SIZE; i++) {
-        x_gen[i] = y_gen[i] = d;
-        d += DELTA;
-    }
-    // z_gen = x_gen.map((v, i) => y_gen.map(t => c1.utility([v,t])))
-
     const graphics = this.add.graphics();
     this.graphics = graphics;
     circle = new Phaser.Geom.Circle(400, 300, 5);
@@ -105,9 +87,8 @@ async function create() {
     let lastPrintTime = 0;
     let setEntitlements = ({x,y}) => {
         people = [];
-        addIndividual(new Individual([x, y], COBB_DOUGLAS([.25, .75]), name='c1', color = 0x2d4ebb), translate = a => [a[0] * 800 / SCALE2, (SCALE2 - a[1]) * 600 / SCALE2]);
-        addIndividual(new Individual([1000-x, 1000-y], COBB_DOUGLAS([.75, .25]), name='c2', color = 0x305d04), translate = a => [(SCALE2 - a[0]) * 800 / SCALE2, a[1] * 600 / SCALE2]);
-        console.dir(people[1]);
+        addIndividual(new Individual([x, y], COBB_DOUGLAS([.25, .75]), name='c1', color = 0x2d4ebb), translate = a => [a[0] * 800 / DENSITY, (DENSITY - a[1]) * 600 / DENSITY]);
+        addIndividual(new Individual([1000-x, 1000-y], COBB_DOUGLAS([.75, .25]), name='c2', color = 0x305d04), translate = a => [(DENSITY - a[0]) * 800 / DENSITY, a[1] * 600 / DENSITY]);
         const c1 = people[0].individual;
         const c2 = people[1].individual;
         this.label_1.text = `[${c1.getEndowment().join(',')}]=${Math.round(c1.utility(c1.getEndowment()),2)}`;
@@ -116,7 +97,7 @@ async function create() {
         this.label_2.visible = true;
     }
     let setEntitlementsPtr = pointer => {
-        setEntitlements({x: [Math.trunc(1000 * (pointer.x / 800)) , 1000 - Math.trunc(1000 * pointer.y / 600)], y: [1000 - Math.trunc(1000 * (pointer.x / 800)) , Math.trunc(1000 * pointer.y / 600)]});
+        setEntitlements({x: Math.trunc(1000 * (pointer.x / 800)) , y: 1000 - Math.trunc(1000 * pointer.y / 600)});
     };
 
     setEntitlements({x: 800, y: 200});
@@ -151,9 +132,11 @@ async function create() {
         }
     });
 
-    const button = this.add.text(700, 50, 'Trade', {
-        fontSize: '20px',
-        fill: '#ff0000',
+    new_circle = new Phaser.Geom.Circle(718, 60, 25);
+
+    const button = this.add.text(700, 50, 'TRADE', {
+        fontSize: '12px',
+        fill: '#FFFFFF',
         fontFamily: 'sans-serif'
     }).setInteractive();
 
@@ -205,15 +188,12 @@ function update() {
             }
         }
 
-        // Requires to reduce 5% of utility to get the lines in place
-        // Otherwise it will overshoot vertical for c1, horizontal for c2 in the top corners
-        // PS: I can't explain it, can you?
         people.forEach(({individual, translate}) => {
-            draw_contours(this.graphics, individual, translate, individual.utility(individual.getEndowment()) * .95);
+            draw_contours(this.graphics, individual, translate, individual.utility(individual.getEndowment()) * DENSITY/100);
         });
 
         if (history.length > 1) {
-            this.graphics.lineStyle(1, 0xFFFFFF, .5);
+            this.graphics.lineStyle(2, 0xFFFFFF, .2);
             for (var i = 0; i < history.length - 1; i++) {
                 this.graphics.beginPath();
                 this.graphics.moveTo(history[i][0], history[i][1]);
@@ -222,58 +202,22 @@ function update() {
             }
         }
 
-        circle.x = c1.getEndowment()[0] * 800 / SCALE;
-        circle.y = (SCALE - c1.getEndowment()[1]) * 600 / SCALE;
+        circle.x = c1.getEndowment()[0] * 800 / MAX_ENDOWMENT;
+        circle.y = (MAX_ENDOWMENT - c1.getEndowment()[1]) * 600 / MAX_ENDOWMENT;
         this.label_1.setPosition(circle.x, circle.y + circle.radius + 10);
         this.label_2.setPosition(circle.x, circle.y - circle.radius - 10);
-        this.graphics.fillStyle(0xff00ff, 1);
-        this.graphics.fillCircleShape(circle);
+        if (do_trade && on_off) {
+            this.graphics.fillStyle(0x390b0b, 1);
+            this.graphics.fillCircleShape(circle);
+        }
+        else {
+            this.graphics.fillStyle(0x8a0a0a, 1);
+            this.graphics.fillCircleShape(circle);
+        }
+        this.graphics.fillStyle(0xffffff, 0.2);
+        this.graphics.fillCircleShape(new_circle);
 
         frame_count++;
+        if (frame_count % 10 == 0) on_off = 1 - on_off;
     }
-}
-
-function get_function(u, key) {
-    if (cache_map[key] === undefined) {
-        cache_map[key] = x_gen.map((v, i) => y_gen.map(t => u([t, v])))
-    }
-    return cache_map[key]
-}
-
-function gen_contour(u, k, v) {
-    const z = get_function(u,k);
-    const max = Math.max(...z.flat());
-    const min = Math.min(...z.flat());
-    var levels = [];
-
-    if (v === undefined) {
-        const LEVELS = 20;
-        for (var i = 0; i < LEVELS; i++)
-            levels.push(min + i * (max - min) / LEVELS);
-    } else {
-        levels = [v];
-    }
-    return isoLines(z, levels);
-}
-
-function draw_contours(graphics, individual, translate, utility_level) {
-    const is_field = utility_level === undefined;
-    if (is_field) {
-        graphics.lineStyle(0.7, individual.getColor(), 1.0);
-    }
-    else {
-        graphics.lineStyle(1.5, individual.getColor(), 1.0);
-        graphics.fillStyle('#ff0000', 0.2);
-    }
-    gen_contour(individual.getUtility(), individual.getName(), utility_level).forEach((v) => {
-        v.forEach((z) => {
-            const u = z.map(translate);
-            graphics.beginPath();
-            graphics.moveTo(...u.shift());
-            u.forEach((v) => graphics.lineTo(...v));
-            graphics.strokePath();
-            if (!is_field)
-                graphics.fillPath();
-        });
-    });
 }

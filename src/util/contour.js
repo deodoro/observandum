@@ -1,128 +1,60 @@
-// import Plotly from 'plotly.js-dist-min';
+import { isoBands, isoLines } from 'marchingsquares';
+const cache_map = {};
 
-const SCALE = 1000;
 const SIZE = 100;
+const LEVELS = 20;
 const DELTA = 10;
 
-export default function generateContourData(u, vv) {
-    var x = new Array(SIZE),
-        y = new Array(SIZE),
-        z = new Array(SIZE),
-        i,
-        j;
+function get_function(u, key) {
+    if (cache_map[key] === undefined) {
+        const x_gen = new Array(SIZE);
+        const y_gen = new Array(SIZE);
+        var d = 0;
 
-    var d = .01;
-    for (var i = 0; i < SIZE; i++) {
-        x[i] = y[i] = d += .01
+        for (var i = 0; i < SIZE; i++) {
+            x_gen[i] = y_gen[i] = d;
+            d += DELTA;
+        }
+        cache_map[key] = x_gen.map((v, i) => y_gen.map(t => u([t, v])))
     }
+    return cache_map[key]
+}
 
-    zz = new Array(SIZE);
-    x.forEach((v, i) => z[i] = y.map(t => u([v, t])));
-    x.forEach((v, i) => zz[i] = y.map(t => Math.abs(u([v, t]) - vv)));
+function gen_contour(u, k, v) {
+    const z = get_function(u,k);
+    const max = Math.max(...z.flat());
+    const min = Math.min(...z.flat());
+    var levels = [];
 
-    if (vv == undefined) {
-        return [{
-            z: z,
-            x: x,
-            y: y,
-            type: "contour",
-            showscale: false,
-            autocontour: false,
-            ncontours: 40,
-            contours: {
-                coloring: 'lines',
-            },
-            line: {
-                color: 'blue'
-            }
-        }];
+    if (v === undefined) {
+        for (var i = 0; i < LEVELS; i++)
+            levels.push(min + i * (max - min) / LEVELS);
+    } else {
+        levels = [v];
+    }
+    return isoLines(z, levels);
+}
+
+function draw_contours(graphics, individual, translate, utility_level) {
+    const is_field = utility_level === undefined;
+    if (is_field) {
+        graphics.lineStyle(0.7, individual.getColor(), 1.0);
     }
     else {
-        return [{
-            z: z,
-            x: x,
-            y: y,
-            type: "contour",
-            showscale: false,
-            autocontour: false,
-            ncontours: 5,
-            contours: {
-                coloring: 'lines',
-                start: vv - DELTA,
-                end: vv + DELTA,
-            },
-            line: {
-                color: 'red'
-            }
-        }];
+        graphics.lineStyle(1.5, individual.getColor(), 1.0);
+        graphics.fillStyle('#ff0000', 0.2);
     }
-}
-
-async function createEmptyPlotBitmap() {
-    return new Promise((resolve) => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 800;
-        canvas.height = 600;
-        const ctx = canvas.getContext('2d');
-
-        ctx.fillStyle = 'blue';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        resolve(canvas);
+    gen_contour(individual.getUtility(), individual.getName(), utility_level).forEach((v) => {
+        v.forEach((z) => {
+            const u = z.map(translate);
+            graphics.beginPath();
+            graphics.moveTo(...u.shift());
+            u.forEach((v) => graphics.lineTo(...v));
+            graphics.strokePath();
+            if (!is_field)
+                graphics.fillPath();
+        });
     });
 }
 
-async function createContourPlotBitmap(inverted = false, u, v) {
-    return new Promise((resolve, reject) => {
-        const data = generateContourData(u, v);
-        const layout = {
-            xaxis: {
-                visible: false
-            },
-            yaxis: {
-                visible: false
-            },
-            showlegend: false,
-            annotations: [],
-            title: '',
-            margin: {
-                l: 0,
-                r: 0,
-                t: 0,
-                b: 0
-            },
-            paper_bgcolor: 'rgba(0,0,0,0)',
-            plot_bgcolor: 'rgba(0,0,0,0)'
-        };
-
-        const gd = document.createElement('div');
-        gd.style.backgroundColor = 'rgba(0,0,0,0)';
-        document.body.appendChild(gd);
-
-        Plotly.newPlot(gd, data, layout).then(function(gd) {
-            Plotly.toImage(gd, {format: 'png', width: 800, height: 600}).then(function(url) {
-                const img = new Image();
-                img.src = url;
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    if (inverted) {
-                        ctx.translate(canvas.width / 2, canvas.height / 2);
-                        ctx.rotate(Math.PI);
-                        ctx.drawImage(img, -canvas.width/2, -canvas.height/2);
-                    }
-                    else {
-                        ctx.drawImage(img, 0, 0);
-                    }
-                    document.body.removeChild(gd);
-                    resolve(canvas);
-                };
-            }).catch(reject);
-        }).catch(reject);
-    });
-}
-
-export { createEmptyPlotBitmap, createContourPlotBitmap };
+export { draw_contours };
