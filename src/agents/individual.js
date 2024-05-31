@@ -1,4 +1,4 @@
-import { DYN_HOM_COBB_DOUGLAS, gradient, DELTA, marginalUtility } from '../artifacts/utility';
+import { DYN_HOM_COBB_DOUGLAS, gradient, DELTA, marginalUtility, negative } from '../artifacts/utility';
 import { max, indexOf } from 'lodash';
 
 const argmax = (arr) => {
@@ -65,4 +65,20 @@ class Individual {
     }
 }
 
-export {Individual};
+function run_trade(proposer, counterpart, bids) {
+    var bid_accepted = false;
+    const bid = proposer.bestTrade();
+    if (counterpart.evaluate(negative(bid))) {
+        proposer.trade(bid);
+        counterpart.trade(negative(bid));
+        bid_accepted = true;
+        bids.push({'proposer': proposer.getName(), 'bid': bid});
+    }
+    if (!bid_accepted) {
+        console.log('No more trades');
+        console.dir(bids);
+    }
+    return bid_accepted;
+}
+
+export {Individual, run_trade};
