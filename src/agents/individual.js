@@ -75,8 +75,8 @@ function run_trade(proposer, counterpart, bids) {
         bids.push({'proposer': proposer.getName(), 'bid': bid});
     }
     if (!bid_accepted) {
-        console.log('No more trades');
-        console.dir(bids);
+        // console.log('No more trades');
+        // console.dir(bids);
     }
     return bid_accepted;
 }

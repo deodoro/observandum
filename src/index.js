@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COBB_DOUGLAS } from './artifacts/utility';
+import { COBB_DOUGLAS, gradient, marginalUtility } from './artifacts/utility';
 import { Individual, run_trade } from './agents/individual';
 import { last } from 'lodash';
 import { round } from 'math';
@@ -32,6 +32,7 @@ async function create() {
     const graphics = this.add.graphics();
     this.graphics = graphics;
     this.cameras.main.setBackgroundColor('#eee7dd');
+    this.last_interaction = Date.now();
 
     // Game state
     const state = {
@@ -39,6 +40,7 @@ async function create() {
         frame_count: 0,
         turn: 0,
         history: [],
+        solution_history: [],
         bids: [],
         on_off: 0,
         people: []
@@ -67,6 +69,30 @@ async function create() {
     this.input.on('pointermove', pointerMoveHandler.bind(this));
 
     setEntitlements.call(this, { x: 800, y: 200 });
+    // const c1 = this.game_state.people[0].individual;
+    // const c2 = this.game_state.people[1].individual;
+    // const SIZE=100;
+    // const DELTA=10;
+    // const x_gen = new Array(SIZE);
+    // const y_gen = new Array(SIZE);
+    // var d = 0;
+
+    // for (var i = 0; i < SIZE; i++) {
+    //     x_gen[i] = y_gen[i] = d;
+    //     d += DELTA;
+    // }
+    // const z_1 = x_gen.map((v, i) => y_gen.map(t => gradient(c1.utility, [t, v])))
+    // const z_2 = x_gen.map((v, i) => y_gen.map(t => gradient(c2.utility, [t, v])))
+    // const z_3 = new Array(SIZE);
+    // z_3.fill(new Array(SIZE));
+    // for (var i = 0; i < SIZE; i++) {
+    //     for (var j = 0; j < SIZE; j++) {
+    //         z_3[i][j] = z_1[i][j].map((v,idx) => v - z_2[SIZE-i-1][SIZE-j-1][idx]);
+    //     }
+    // }
+    // console.dir(z_1);
+    // console.dir(z_2);
+    // console.dir(z_3);
 }
 
 function createLabel(x, y, color, text = '-', fontSize = 12) {
@@ -103,6 +129,7 @@ function pointerMoveHandler(pointer) {
         setEntitlementsPtr.call(this, pointer);
         this.lastPrintTime = currentTime;
     }
+    this.last_interaction = currentTime;
 }
 
 function setEntitlements({ x, y }) {
@@ -146,7 +173,7 @@ function update() {
         this.game_state.people.forEach(({ individual, translate }) => draw_contours(this.graphics, individual, translate));
 
         if (this.game_state.do_trade) {
-            const { people, turn, bids, history } = this.game_state;
+            const { people, turn, bids, history, solution_history } = this.game_state;
             const currentPerson = people[turn].individual;
             const otherPerson = people[1 - turn].individual;
             if (run_trade(currentPerson, otherPerson, bids)) {
@@ -154,16 +181,27 @@ function update() {
                 update_consumers(this);
                 this.game_state.turn = 1 - this.game_state.turn;
             } else {
+                const last_trade = last(history);
+                const circle = new Phaser.Geom.Circle((people[0].individual.getEndowment()[0]  * this.cameras.main.width) / MAX_ENDOWMENT, ((MAX_ENDOWMENT - people[0].individual.getEndowment()[1]) * this.cameras.main.height) / MAX_ENDOWMENT, 5);
+                console.dir(circle);
+                console.dir(currentPerson.getEndowment());
+                solution_history.push(circle);
                 this.game_state.do_trade = false;
+                this.last_interaction = Date.now();
             }
         }
 
         this.game_state.people.forEach(({ individual, translate }) =>
             draw_contours(this.graphics, individual, translate, individual.utility(individual.getEndowment()) * DENSITY / 100));
 
+        this.game_state.solution_history.forEach(circle => {
+            this.graphics.fillStyle(0xf0f0f0, 0.2);
+            this.graphics.fillCircleShape(circle);
+        });
+
         if (this.game_state.history.length > 1) {
             this.graphics.lineStyle(2, 0xFFFFFF, 0.2);
-            for (let i = 0; i < this.game_state.history.length - 1; i++) {
+            for (let i = 1; i < this.game_state.history.length - 1; i++) {
                 this.graphics.beginPath();
                 this.graphics.moveTo(this.game_state.history[i][0], this.game_state.history[i][1]);
                 this.graphics.lineTo(this.game_state.history[i + 1][0], this.game_state.history[i + 1][1]);
@@ -191,6 +229,14 @@ function update() {
 
         this.game_state.frame_count++;
         if (this.game_state.frame_count % 10 === 0) this.game_state.on_off = 1 - this.game_state.on_off;
+
+        if (!this.game_state.do_trade && Date.now() - this.last_interaction > 1000) {
+            this.game_state.history = [];
+            this.label_price.visible = false;
+            this.label_price_accum.visible = false;
+            this.game_state.do_trade = true;
+            setEntitlements.call(this, { x: 1000 * Math.random(), y:  1000 * Math.random() });
+        }
     }
 }
 
