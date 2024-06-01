@@ -37,7 +37,10 @@ class Individual {
         const v = gradient(this.utility, this.endowment);
         const idx = argmax(v);
         const u = v.map((_, j) => (j === idx ? 1 : -this.MRS(this.endowment, idx, j)));
-        return u.map(i => +(i * DELTA).toFixed(3));
+        const bid = u.map(i => +(i * DELTA).toFixed(3));
+        if(this.evaluate(bid))
+            throw new Error('Bad bid!');
+        return bid;
     }
 
     MRS(bundle = this.endowment, i = 0, j = 1) {
@@ -65,7 +68,7 @@ class Individual {
     }
 }
 
-function run_trade(proposer, counterpart, bids) {
+function run_trade_less(proposer, counterpart, bids) {
     var bid_accepted = false;
     const bid = proposer.bestTrade();
     if (counterpart.evaluate(negative(bid))) {
@@ -79,6 +82,26 @@ function run_trade(proposer, counterpart, bids) {
         // console.dir(bids);
     }
     return bid_accepted;
+}
+
+function run_trade(proposer, counterpart, bids, first_run = true) {
+    var bid_accepted = false;
+    const bid = proposer.bestTrade();
+    if (counterpart.evaluate(negative(bid))) {
+        proposer.trade(bid);
+        counterpart.trade(negative(bid));
+        bid_accepted = true;
+        bids.push({'proposer': proposer.getName(), 'bid': bid});
+    }
+    if (!bid_accepted) {
+        if (first_run) {
+            return run_trade(counterpart, proposer, bids, false);
+        }
+        else
+            return false;
+    }
+    else
+        return true;
 }
 
 export {Individual, run_trade};

@@ -1,0 +1,27 @@
+
+calculating diffs
+
+    const c1 = this.game_state.people[0].individual;
+    const c2 = this.game_state.people[1].individual;
+    const SIZE=100;
+    const DELTA=10;
+    const x_gen = new Array(SIZE);
+    const y_gen = new Array(SIZE);
+    var d = 0;
+
+    for (var i = 0; i < SIZE; i++) {
+        x_gen[i] = y_gen[i] = d;
+        d += DELTA;
+    }
+    const z_1 = x_gen.map((v, i) => y_gen.map(t => gradient(c1.utility, [t, v])))
+    const z_2 = x_gen.map((v, i) => y_gen.map(t => gradient(c2.utility, [t, v])))
+    const z_3 = new Array(SIZE);
+    z_3.fill(new Array(SIZE));
+    for (var i = 0; i < SIZE; i++) {
+        for (var j = 0; j < SIZE; j++) {
+            z_3[i][j] = z_1[i][j].map((v,idx) => v - z_2[SIZE-i-1][SIZE-j-1][idx]);
+        }
+    }
+    console.dir(z_1);
+    console.dir(z_2);
+    console.dir(z_3);

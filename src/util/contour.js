@@ -35,24 +35,11 @@ function gen_contour(u, k, v) {
     return isoLines(z, levels);
 }
 
-function draw_contours(graphics, individual, translate, utility_level) {
-    const is_field = utility_level === undefined;
-    if (is_field) {
-        graphics.lineStyle(0.7, individual.getColor(), 1.0);
-    }
-    else {
-        graphics.lineStyle(1.5, individual.getColor(), 1.0);
-        graphics.fillStyle('#ff0000', 0.2);
-    }
+function draw_contours(individual, translate, draw_callback, utility_level) {
     gen_contour(individual.getUtility(), individual.getName(), utility_level).forEach((v) => {
         v.forEach((z) => {
             const u = z.map(translate);
-            graphics.beginPath();
-            graphics.moveTo(...u.shift());
-            u.forEach((v) => graphics.lineTo(...v));
-            graphics.strokePath();
-            if (!is_field)
-                graphics.fillPath();
+            draw_callback(u);
         });
     });
 }

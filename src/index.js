@@ -1,12 +1,15 @@
 import Phaser from 'phaser';
 import { COBB_DOUGLAS, gradient, marginalUtility } from './artifacts/utility';
 import { Individual, run_trade } from './agents/individual';
-import { last } from 'lodash';
+import { every, last } from 'lodash';
 import { round } from 'math';
 import { draw_contours } from './util/contour';
 
 const MAX_ENDOWMENT = 1000;
 const DENSITY = 90; // Isoline density
+const COLOR_C1 = '#2d4ebb';
+const COLOR_C2 = '#511C29';
+
 
 const config = {
     type: Phaser.AUTO,
@@ -31,7 +34,7 @@ async function preload() {}
 async function create() {
     const graphics = this.add.graphics();
     this.graphics = graphics;
-    this.cameras.main.setBackgroundColor('#eee7dd');
+    this.cameras.main.setBackgroundColor('#EFEBCE');
     this.last_interaction = Date.now();
 
     // Game state
@@ -41,6 +44,7 @@ async function create() {
         turn: 0,
         history: [],
         solution_history: [],
+        solution_path: [],
         bids: [],
         on_off: 0,
         people: []
@@ -50,8 +54,8 @@ async function create() {
     const circle = new Phaser.Geom.Circle(this.cameras.main.centerX, this.cameras.main.centerY, 5);
     this.circle = circle;
 
-    this.label_1 = createLabel.call(this, circle.x, circle.y + circle.radius + 10, '#2d4ebb');
-    this.label_2 = createLabel.call(this, circle.x, circle.y - circle.radius - 10, '#437e07');
+    this.label_1 = createLabel.call(this, circle.x, circle.y + circle.radius + 10, COLOR_C1);
+    this.label_2 = createLabel.call(this, circle.x, circle.y - circle.radius - 10, COLOR_C2);
     this.label_price = createLabel.call(this, this.cameras.main.width - 89, this.cameras.main.height - 50, '#f0f0f0', 'Spot:', 20);
     this.label_price_accum = createLabel.call(this, this.cameras.main.width - 100, this.cameras.main.height - 70, '#f0f0f0', 'Accum:', 20);
 
@@ -69,30 +73,6 @@ async function create() {
     this.input.on('pointermove', pointerMoveHandler.bind(this));
 
     setEntitlements.call(this, { x: 800, y: 200 });
-    // const c1 = this.game_state.people[0].individual;
-    // const c2 = this.game_state.people[1].individual;
-    // const SIZE=100;
-    // const DELTA=10;
-    // const x_gen = new Array(SIZE);
-    // const y_gen = new Array(SIZE);
-    // var d = 0;
-
-    // for (var i = 0; i < SIZE; i++) {
-    //     x_gen[i] = y_gen[i] = d;
-    //     d += DELTA;
-    // }
-    // const z_1 = x_gen.map((v, i) => y_gen.map(t => gradient(c1.utility, [t, v])))
-    // const z_2 = x_gen.map((v, i) => y_gen.map(t => gradient(c2.utility, [t, v])))
-    // const z_3 = new Array(SIZE);
-    // z_3.fill(new Array(SIZE));
-    // for (var i = 0; i < SIZE; i++) {
-    //     for (var j = 0; j < SIZE; j++) {
-    //         z_3[i][j] = z_1[i][j].map((v,idx) => v - z_2[SIZE-i-1][SIZE-j-1][idx]);
-    //     }
-    // }
-    // console.dir(z_1);
-    // console.dir(z_2);
-    // console.dir(z_3);
 }
 
 function createLabel(x, y, color, text = '-', fontSize = 12) {
@@ -137,8 +117,8 @@ function setEntitlements({ x, y }) {
         ({ individual: new Individual(coords, COBB_DOUGLAS(weights), name, color), translate });
 
     this.game_state.people = [
-        createIndividual([x, y], [0.25, 0.75], 'c1', 0x2d4ebb, a => [a[0] * this.cameras.main.width / DENSITY, (DENSITY - a[1]) * this.cameras.main.height / DENSITY]),
-        createIndividual([1000 - x, 1000 - y], [0.75, 0.25], 'c2', 0x305d04, a => [(DENSITY - a[0]) * this.cameras.main.width / DENSITY, a[1] * this.cameras.main.height / DENSITY])
+        createIndividual([x, y], [0.25, 0.75], 'c1', parseInt(COLOR_C1.slice(1), 16), a => [a[0] * this.cameras.main.width / DENSITY, (DENSITY - a[1]) * this.cameras.main.height / DENSITY]),
+        createIndividual([1000 - x, 1000 - y], [0.75, 0.25], 'c2', parseInt(COLOR_C2.slice(1), 16), a => [(DENSITY - a[0]) * this.cameras.main.width / DENSITY, a[1] * this.cameras.main.height / DENSITY])
     ];
 
     updateLabels.call(this);
@@ -170,33 +150,80 @@ function update_consumers(game) {
 function update() {
     if (this.graphics) {
         this.graphics.clear();
-        this.game_state.people.forEach(({ individual, translate }) => draw_contours(this.graphics, individual, translate));
+
+        this.game_state.people.forEach(({ individual, translate }) => {
+            this.graphics.lineStyle(1, individual.getColor(), .2);
+            draw_contours(individual, translate, u => {
+                this.graphics.beginPath();
+                this.graphics.moveTo(...u.shift());
+                u.forEach((v) => this.graphics.lineTo(...v));
+                this.graphics.strokePath();
+            });
+        });
 
         if (this.game_state.do_trade) {
-            const { people, turn, bids, history, solution_history } = this.game_state;
+            const { people, turn, bids, history, solution_history, solution_path } = this.game_state;
             const currentPerson = people[turn].individual;
             const otherPerson = people[1 - turn].individual;
-            if (run_trade(currentPerson, otherPerson, bids)) {
-                history.push([this.circle.x, this.circle.y]);
-                update_consumers(this);
-                this.game_state.turn = 1 - this.game_state.turn;
-            } else {
+            const diffs = history.length > 1 ? [history[history.length - 2][0] - this.circle.x, history[history.length - 2][1] - this.circle.y] : [0, 0];
+            if ((history.length > 1) && (every(diffs, x => Math.abs(x) < .1))) {
+                console.log("In Loop");
                 const last_trade = last(history);
                 const circle = new Phaser.Geom.Circle((people[0].individual.getEndowment()[0]  * this.cameras.main.width) / MAX_ENDOWMENT, ((MAX_ENDOWMENT - people[0].individual.getEndowment()[1]) * this.cameras.main.height) / MAX_ENDOWMENT, 5);
-                console.dir(circle);
-                console.dir(currentPerson.getEndowment());
+                // console.dir(circle);
+                // console.dir(currentPerson.getEndowment());
                 solution_history.push(circle);
+                if (history.length > 1) {
+                    solution_path.push(history);
+                }
                 this.game_state.do_trade = false;
                 this.last_interaction = Date.now();
             }
+            else {
+                if (run_trade(currentPerson, otherPerson, bids)) {
+                    history.push([this.circle.x, this.circle.y]);
+                    update_consumers(this);
+                    this.game_state.turn = 1 - this.game_state.turn;
+                } else {
+                    const last_trade = last(history);
+                    const circle = new Phaser.Geom.Circle((people[0].individual.getEndowment()[0]  * this.cameras.main.width) / MAX_ENDOWMENT, ((MAX_ENDOWMENT - people[0].individual.getEndowment()[1]) * this.cameras.main.height) / MAX_ENDOWMENT, 5);
+                    // console.dir(circle);
+                    // console.dir(currentPerson.getEndowment());
+                    solution_history.push(circle);
+                    if (history.length > 1) {
+                        solution_path.push(history);
+                    }
+                    this.game_state.do_trade = false;
+                    this.last_interaction = Date.now();
+                }
+            }
         }
 
-        this.game_state.people.forEach(({ individual, translate }) =>
-            draw_contours(this.graphics, individual, translate, individual.utility(individual.getEndowment()) * DENSITY / 100));
+        this.game_state.people.forEach(({ individual, translate }) => {
+            this.graphics.lineStyle(1.5, individual.getColor(), 1.0);
+            this.graphics.fillStyle('#ffffff', 0.2);
+            draw_contours(individual, translate, u => {
+                this.graphics.beginPath();
+                this.graphics.moveTo(...u.shift());
+                u.forEach((v) => this.graphics.lineTo(...v));
+                this.graphics.strokePath();
+                this.graphics.fillPath();
+            }, individual.utility(individual.getEndowment()) * DENSITY / 100);
+        });
 
         this.game_state.solution_history.forEach(circle => {
-            this.graphics.fillStyle(0xf0f0f0, 0.2);
+            this.graphics.fillStyle(0xEC9F05, 0.4);
             this.graphics.fillCircleShape(circle);
+        });
+
+        this.game_state.solution_path.forEach(history => {
+            this.graphics.lineStyle(2, 0xEC9F05, 0.4);
+            for (let i = 1; i < history.length - 1; i++) {
+                this.graphics.beginPath();
+                this.graphics.moveTo(history[i][0], history[i][1]);
+                this.graphics.lineTo(history[i + 1][0], history[i + 1][1]);
+                this.graphics.strokePath();
+            }
         });
 
         if (this.game_state.history.length > 1) {
@@ -217,11 +244,11 @@ function update() {
             this.label_2.setPosition(this.circle.x, this.circle.y - this.circle.radius - 10);
         }
 
-        if (this.game_state.do_trade && this.game_state.on_off) {
-            this.graphics.fillStyle(0x390b0b, 1);
+        if (this.game_state.do_trade  && this.game_state.on_off) {
+            this.graphics.fillStyle(0xE03616, 1);
             this.graphics.fillCircleShape(this.circle);
         } else {
-            this.graphics.fillStyle(0x8a0a0a, 1);
+            this.graphics.fillStyle(0x400406, 1);
             this.graphics.fillCircleShape(this.circle);
         }
         this.graphics.fillStyle(0xffffff, 0.2);
