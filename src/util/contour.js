@@ -1,3 +1,4 @@
+import { isNumber } from 'lodash';
 import { isoBands, isoLines } from 'marchingsquares';
 const cache_map = {};
 
@@ -30,6 +31,9 @@ function gen_contour(u, k, v) {
         for (var i = 0; i < LEVELS; i++)
             levels.push(min + i * (max - min) / LEVELS);
     } else {
+        if (!isNumber(v)) {
+            throw new Error(`Invalid utility level: ${v}`);
+        }
         levels = [v];
     }
     return isoLines(z, levels);

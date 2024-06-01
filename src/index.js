@@ -182,8 +182,8 @@ function setEntitlementsPtr(pointer) {
 
 function updateLabels() {
     const [c1, c2] = this.game_state.people.map(({ individual }) => individual);
-    this.label_1.text = `[${c1.getEndowment().join(',')}] = ${Math.round(c1.utility(c1.getEndowment()), 2)}`;
-    this.label_2.text = `[${c2.getEndowment().join(',')}] = ${Math.round(c2.utility(c2.getEndowment()), 2)}`;
+    this.label_1.text = `[${c1.getEndowment().map(Math.round).join(',')}] = ${Math.round(c1.utility(c1.getEndowment()), 2)}`;
+    this.label_2.text = `[${c2.getEndowment().map(Math.round).join(',')}] = ${Math.round(c2.utility(c2.getEndowment()), 2)}`;
     this.label_1.visible = true;
     this.label_2.visible = true;
 }
@@ -193,8 +193,8 @@ function update_consumers(game) {
     const round_n = num => Math.round((num + Number.EPSILON) * 100) / 100;
     const q_x = game.game_state.bids.reduce((acc, val) => acc + val.bid[0], 0);
     const q_y = game.game_state.bids.reduce((acc, val) => acc + val.bid[1], 0);
-    game.label_price.text = `Spot: 1:${Math.abs(round_n(game.game_state.bids[game.game_state.bids.length - 1].bid[1] / game.game_state.bids[game.game_state.bids.length - 1].bid[0]))}`;
-    game.label_price_accum.text = `Accum: 1:${round_n(q_y / q_x)}`;
+    game.label_price.text = `(spot) 1:${Math.abs(round_n(game.game_state.bids[game.game_state.bids.length - 1].bid[1] / game.game_state.bids[game.game_state.bids.length - 1].bid[0]))}`;
+    game.label_price_accum.text = `1:${Math.abs(round_n(q_y / q_x))}`;
     game.label_1.text = `[${c1.getEndowment().map(Math.round).join(',')}] = ${Math.round(c1.utility(c1.getEndowment()), 2)}`;
     game.label_2.text = `[${c2.getEndowment().map(Math.round).join(',')}] = ${Math.round(c2.utility(c2.getEndowment()), 2)}`;
 }
@@ -221,7 +221,8 @@ function update() {
             const wrap_up = () => {
                 const last_trade = last(history);
                 const circle = new Phaser.Geom.Circle((people[0].individual.getEndowment()[0]  * this.cameras.main.width) / MAX_ENDOWMENT, ((MAX_ENDOWMENT - people[0].individual.getEndowment()[1]) * this.cameras.main.height) / MAX_ENDOWMENT, 5);
-                solution_history.push(circle);
+                const label = createLabel.call(this, circle.x, circle.y, BUTTON_COLOR, `${this.label_price_accum.text}`);
+                solution_history.push({circle, label});
                 if (history.length > 1) {
                     solution_path.push(history);
                 }
@@ -256,7 +257,7 @@ function update() {
             }, individual.utility(individual.getEndowment()) * DENSITY / 100);
         });
 
-        this.game_state.solution_history.forEach(circle => {
+        this.game_state.solution_history.forEach(({circle, label}) => {
             this.graphics.fillStyle(SOLUTION_PATH_COLOR, 0.4);
             this.graphics.fillCircleShape(circle);
         });
@@ -302,8 +303,9 @@ function update() {
 
         if (this.game_state.random_draw && !this.game_state.do_trade && Date.now() - this.last_interaction > 1000) {
             this.game_state.history = [];
-            this.label_price.visible = false;
-            this.label_price_accum.visible = false;
+            this.game_state.bids = [];
+            this.label_price.visible = true;
+            this.label_price_accum.visible = true;
             this.game_state.do_trade = true;
             setEntitlements.call(this, { x: 1000 * Math.random(), y:  1000 * Math.random() });
         }
