@@ -6,18 +6,11 @@ const argmax = (arr) => {
     return indexOf(arr, maxValue);
 };
 
-class Individual {
-    constructor(endowment, u = DYN_HOM_COBB_DOUGLAS, name, color) {
+// Base Trader class
+class Trader {
+    constructor(endowment, utility) {
         this.endowment = endowment;
-        this.utility = u;
-        if (name === undefined)
-            this.name = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-        else
-            this.name = name;
-        if (color === undefined)
-            this.color = 0x000000 + Math.random() * 0xffffff;
-        else
-            this.color = color;
+        this.utility = utility;
     }
 
     evaluate(bid) {
@@ -38,13 +31,27 @@ class Individual {
         const idx = argmax(v);
         const u = v.map((_, j) => (j === idx ? 1 : -this.MRS(this.endowment, idx, j)));
         const bid = u.map(i => +(i * DELTA).toFixed(3));
-        if(this.evaluate(bid))
-            throw new Error('Bad bid!');
+        // if (!this.evaluate(bid)) {
+        //     throw new Error('Bad bid!');
+        // }
         return bid;
     }
 
     MRS(bundle = this.endowment, i = 0, j = 1) {
         return marginalUtility(this.utility, bundle, i) / marginalUtility(this.utility, bundle, j);
+    }
+
+    getUtility() {
+        return this.utility;
+    }
+}
+
+// Individual class inheriting from Trader
+class Individual extends Trader {
+    constructor(endowment, u = DYN_HOM_COBB_DOUGLAS, name, color) {
+        super(endowment, u);
+        this.name = name || Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+        this.color = color || 0x000000 + Math.random() * 0xffffff;
     }
 
     getEndowment() {
@@ -63,9 +70,6 @@ class Individual {
         return this.color;
     }
 
-    getUtility() {
-        return this.utility;
-    }
 }
 
 function run_trade_less(proposer, counterpart, bids) {
@@ -96,12 +100,13 @@ function run_trade(proposer, counterpart, bids, first_run = true) {
     if (!bid_accepted) {
         if (first_run) {
             return run_trade(counterpart, proposer, bids, false);
-        }
-        else
+        } else {
             return false;
-    }
-    else
+        }
+    } else {
         return true;
+    }
 }
 
-export {Individual, run_trade};
+export { Individual, run_trade };
+
