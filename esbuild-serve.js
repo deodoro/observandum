@@ -14,6 +14,10 @@ const buildOptions = {
       dest: 'dist/index.html',
     }),
     copyStaticFiles({
+      src: 'src/test.html',
+      dest: 'dist/test.html',
+    }),
+    copyStaticFiles({
       src: 'assets',
       dest: 'dist/assets',
     }),
@@ -35,6 +39,11 @@ async function startBuild() {
   chokidar.watch('src/index.html').on('change', () => {
     esbuild.build(buildOptions).then(() => {
       console.log('Rebuilt due to index.html change');
+    }).catch(() => process.exit(1));
+  });
+  chokidar.watch('src/test.html').on('change', () => {
+    esbuild.build(buildOptions).then(() => {
+      console.log('Rebuilt due to test.html change');
     }).catch(() => process.exit(1));
   });
 }

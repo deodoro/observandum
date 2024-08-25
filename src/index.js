@@ -48,25 +48,31 @@ window.addEventListener("resize", () => {
   );
 });
 
-document.getElementById("random").addEventListener("click", () => {
+document.getElementById("stop-simulation").addEventListener("click", () => {
   if (game.click_random()) {
-    document.getElementById("run_trade").disabled = true;
+    document.getElementById("run-single-trade").disabled = true;
+    document.getElementById("stop-simulation").classList.add("red");
+    document.getElementById("stop-simulation").textContent = "Stop Simulation";
   } else {
-    document.getElementById("run_trade").disabled = false;
+    document.getElementById("run-single-trade").disabled = false;
+    document.getElementById("stop-simulation").classList.remove("red");
+    document.getElementById("stop-simulation").textContent = "Start Simulation";
   }
-  document.getElementById("run_trade").innerText = "Run trade";
+  document.getElementById("run-single-trade").innerText = "Run trade";
 });
 
-document.getElementById("run_trade").addEventListener("click", () => {
+document.getElementById("run-single-trade").addEventListener("click", () => {
   if (game.click_run_trade()) {
-    document.getElementById("run_trade").innerText = "Stop trade";
+    document.getElementById("run-single-trade").innerText = "Stop trade";
+    document.getElementById("run-single-trade").classList.add("red");
   } else {
-    document.getElementById("run_trade").innerText = "Run trade";
+    document.getElementById("run-single-trade").innerText = "Run trade";
+    document.getElementById("run-single-trade").classList.remove("red");
   }
 });
 
-document.getElementById("run_trade").disabled = true;
-document.getElementById("run_trade").innerText = "Run trade";
+document.getElementById("run-single-trade").disabled = true;
+document.getElementById("run-single-trade").innerText = "Run trade";
 async function preload() { }
 
 async function create() {
@@ -113,34 +119,19 @@ async function create() {
     this,
     this.cameras.main.width - 89,
     this.cameras.main.height - 50,
-    LABEL_COLOR,
-    "Spot:",
-    20,
+    "#373737",
+    "spot",
+    14,
   );
   this.label_price_accum = createLabel.call(
     this,
     this.cameras.main.width - 100,
     this.cameras.main.height - 70,
     LABEL_COLOR,
-    "Accum:",
+    "accum price",
     20,
   );
   this.coordLabel = createLabel.call(this, 0, 0, COLOR_C1, "", 12);
-
-  this.button = createButton.call(
-    this,
-    this.cameras.main.width - 100,
-    50,
-    "RUN TRADE",
-    (color = DISABLED_COLOR),
-  );
-  this.button_random = createButton.call(
-    this,
-    this.cameras.main.width - 100,
-    80,
-    "RANDOM",
-    (color = ENABLED_COLOR),
-  );
 
   const click_run_trade = () => {
     this.game_state.do_trade = !this.game_state.do_trade;
@@ -151,25 +142,13 @@ async function create() {
     return this.game_state.do_trade;
   };
 
-  this.button.on("pointerdown", () => {
-    click_run_trade();
-  });
-
   game.click_run_trade = click_run_trade;
 
   const click_random = () => {
     this.game_state.random_draw = !this.game_state.random_draw;
-    if (this.game_state.random_draw) {
-      this.button.setTint(DISABLED_COLOR);
-      this.button_random.setTint(ENABLED_COLOR);
-    } else {
-      this.button_random.setTint(DISABLED_COLOR);
-      this.button.setTint(ENABLED_COLOR);
-    }
     this.game_state.do_trade = false;
     return this.game_state.random_draw;
   };
-  this.button_random.on("pointerdown", () => { });
   game.click_random = click_random;
 
   this.input.on("pointerdown", pointerDownHandler.bind(this));
@@ -280,6 +259,15 @@ function updateLabels() {
   this.label_2.text = `[${c2.getEndowment().map(Math.round).join(",")}] = ${Math.round(c2.utility(c2.getEndowment()), 2)}`;
   this.label_1.visible = true;
   this.label_2.visible = true;
+  update_body_text(c1, c2);
+}
+function update_body_text(c1, c2) {
+  document.getElementById("ca-x").innerText = Math.round(c1.getEndowment()[0]);
+  document.getElementById("ca-y").innerText = Math.round(c1.getEndowment()[1]);
+  document.getElementById("ca-u").innerText = Math.round(c1.utility(c1.getEndowment()), 2);
+  document.getElementById("cb-x").innerText = Math.round(c2.getEndowment()[0]);
+  document.getElementById("cb-y").innerText = Math.round(c2.getEndowment()[1]);
+  document.getElementById("cb-u").innerText = Math.round(c2.utility(c2.getEndowment()), 2);
 }
 
 function update_consumers(game) {
@@ -287,10 +275,11 @@ function update_consumers(game) {
   const round_n = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
   const q_x = game.game_state.bids.reduce((acc, val) => acc + val.bid[0], 0);
   const q_y = game.game_state.bids.reduce((acc, val) => acc + val.bid[1], 0);
-  game.label_price.text = `(spot) 1:${Math.abs(round_n(game.game_state.bids[game.game_state.bids.length - 1].bid[1] / game.game_state.bids[game.game_state.bids.length - 1].bid[0]))}`;
+  game.label_price.text = `1:${Math.abs(round_n(game.game_state.bids[game.game_state.bids.length - 1].bid[1] / game.game_state.bids[game.game_state.bids.length - 1].bid[0]))} [spot]`;
   game.label_price_accum.text = `1:${Math.abs(round_n(q_y / q_x))}`;
   game.label_1.text = `[${c1.getEndowment().map(Math.round).join(",")}] = ${Math.round(c1.utility(c1.getEndowment()), 2)}`;
   game.label_2.text = `[${c2.getEndowment().map(Math.round).join(",")}] = ${Math.round(c2.utility(c2.getEndowment()), 2)}`;
+  update_body_text(c1, c2);
 }
 
 function update() {
@@ -342,7 +331,7 @@ function update() {
         }
         this.game_state.do_trade = false;
         this.last_interaction = Date.now();
-        this.button.setText("RUN TRADE");
+        document.getElementById("run-single-trade").textContent = "RUN TRADE";
       };
 
       if (history.length > 1 && every(diffs, (x) => Math.abs(x) < 0.1)) {

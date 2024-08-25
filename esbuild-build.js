@@ -12,6 +12,10 @@ const buildOptions = {
       dest: 'dist/index.html',
     }),
     copyStaticFiles({
+      src: 'src/test.html',
+      dest: 'dist/test.html',
+    }),
+    copyStaticFiles({
       src: 'assets',
       dest: 'dist/assets',
     }),

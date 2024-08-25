@@ -5,6 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Edgeworth Box Simulation</title>
+  <!-- Importing Materialize CSS -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet" />
 
   <style>
@@ -34,7 +35,7 @@
       /* Allows the box to take available height */
       width: 100%;
       height: 100%;
-      border: none;
+      border: 1px solid black;
       margin-top: 20px;
       position: relative;
     }
@@ -48,19 +49,6 @@
           #000 10px,
           #000 20px);
     }
-
-    @media (max-width: 768px) {
-      .row {
-        flex-direction: column;
-      }
-
-      .left-column,
-      .right-column {
-        max-width: 100%;
-        flex: 100%;
-        padding-left: 0;
-      }
-    }
   </style>
 </head>
 
@@ -69,37 +57,13 @@
     <h1 class="center-align">Edgeworth Box</h1>
     <div class="section">
       <h5>Definition</h5>
-      <p>
-        An Edgeworth Box is a graphical tool used in microeconomics to analyze
-        the efficiency of resource allocation between two consumers (or
-        producers) in an economy. It’s particularly useful for understanding
-        concepts related to general equilibrium theory, Pareto efficiency, and
-        trade.
-      </p>
+      <p>Libero dignissim elementum, ac ac vulputate, sit luctus hac a.</p>
     </div>
 
     <div class="section">
-      <h5>This Simulation</h5>
+      <h5>The Simulation</h5>
       <p>
-        This simulation represents a pure exchange scenario involving two
-        goods, X and Y, with fixed total quantities of 1000 units each. These
-        goods are represented on the axes of the chart to the right. Consumer
-        A’s X goods are measured from left to right, and Y goods are measured
-        from bottom to top. Consumer B holds the remaining goods (the total X
-        goods in the economy minus those allocated to A). You can click and
-        drag on the chart to select any allocation. When you press the 'Run
-        Trade' button, the consumers will attempt to trade based on their
-        preferences (i.e., their utility functions). Trading stops when
-        neither consumer can make a beneficial exchange. If you run 'Random
-        Trades,' the simulation will perform multiple iterations with random
-        initial allocations. In equilibrium, you’ll observe a curve that shows
-        the boundary where trades occur. The shape of this curve reflects the
-        preferences of each consumer. At the bottom right, you can see the
-        proportion of goods Y traded per unit of good X, that is, the price of
-        goods X in terms of goods Y, the price ratio X:Y. The bottom ratio is
-        the spot price (the proportion traded in the last trade). The top
-        ratio is the average price, which should converge to equilibrium price
-        .
+        Neque condimentum eros, eu nunc suspendisse, nunc vestibulum ut nisl.
       </p>
     </div>
     <div class="row">
@@ -144,15 +108,15 @@
             <tbody>
               <tr>
                 <td>Consumer A</td>
-                <td id="ca-x">-</td>
-                <td id="ca-y">-</td>
-                <td id="ca-u">-</td>
+                <td id="ca-x">100</td>
+                <td id="ca-y">90</td>
+                <td id="ca-u">1300</td>
               </tr>
               <tr>
                 <td>Consumer B</td>
-                <td id="cb-x">-</td>
-                <td id="cb-y">-</td>
-                <td id="cb-u">-</td>
+                <td id="cb-x">90</td>
+                <td id="cb-y">100</td>
+                <td id="cb-u">1300</td>
               </tr>
             </tbody>
           </table>
@@ -166,7 +130,7 @@
                 <td>
                   <label>
                     <input type="radio" name="bids" value="use_mrs" checked="true" />
-                    <span>Bid derives from utility</span>
+                    <span>Use MRS</span>
                   </label>
                 </td>
               </tr>
@@ -186,23 +150,15 @@
       <div class="right-column">
         <div class="section" style="flex: 1; display: flex; flex-direction: column">
           <h5>Graphical Representation</h5>
-          <div>
-            <button class="btn red" id="stop-simulation">
-              Stop Simulation
-            </button>
-            <button class="btn" id="run-single-trade" disabled="true">
-              Run Single Trade
-            </button>
-          </div>
           <div class="box">
-            <div id="container" style="width: 100%; height: 100%"></div>
+            <div class="diagonal"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="bundle.js"></script>
+  <!-- Importing Materialize JavaScript -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 </body>
 
