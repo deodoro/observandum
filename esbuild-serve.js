@@ -4,14 +4,18 @@ const chokidar = require('chokidar');
 const copyStaticFiles = require('esbuild-copy-static-files');
 
 const buildOptions = {
-  entryPoints: ['src/index.js'],
+  entryPoints: ['src/index.js', 'src/exchange.js'],
   bundle: true,
-  outfile: 'dist/bundle.js',
+  outdir: 'dist/',
   sourcemap: true,
   plugins: [
     copyStaticFiles({
       src: 'src/index.html',
       dest: 'dist/index.html',
+    }),
+    copyStaticFiles({
+      src: 'src/exchange.html',
+      dest: 'dist/exchange.html',
     }),
     copyStaticFiles({
       src: 'src/test.html',
@@ -39,6 +43,11 @@ async function startBuild() {
   chokidar.watch('src/index.html').on('change', () => {
     esbuild.build(buildOptions).then(() => {
       console.log('Rebuilt due to index.html change');
+    }).catch(() => process.exit(1));
+  });
+  chokidar.watch('src/exchange.html').on('change', () => {
+    esbuild.build(buildOptions).then(() => {
+      console.log('Rebuilt due to exchange.html change');
     }).catch(() => process.exit(1));
   });
   chokidar.watch('src/test.html').on('change', () => {

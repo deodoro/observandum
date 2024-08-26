@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Edgeworth Box Simulation</title>
+  <title>Pure Exchange with Two Agents</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet" />
 
   <style>
@@ -39,16 +39,6 @@
       position: relative;
     }
 
-    .diagonal {
-      width: 100%;
-      height: 100%;
-      background: repeating-linear-gradient(45deg,
-          #fff,
-          #fff 10px,
-          #000 10px,
-          #000 20px);
-    }
-
     @media (max-width: 768px) {
       .row {
         flex-direction: column;
@@ -66,40 +56,62 @@
 
 <body>
   <div class="container">
-    <h1 class="center-align">Edgeworth Box</h1>
-    <div class="section">
-      <h5>Definition</h5>
-      <p>
-        An Edgeworth Box is a graphical tool used in microeconomics to analyze
-        the efficiency of resource allocation between two consumers (or
-        producers) in an economy. It’s particularly useful for understanding
-        concepts related to general equilibrium theory, Pareto efficiency, and
-        trade.
-      </p>
-    </div>
-
+    <h1 class="center-align">Pure exchange with two agents</h1>
     <div class="section">
       <h5>This Simulation</h5>
       <p>
-        This simulation represents a pure exchange scenario involving two
-        goods, X and Y, with fixed total quantities of 1000 units each. These
-        goods are represented on the axes of the chart to the right. Consumer
-        A’s X goods are measured from left to right, and Y goods are measured
-        from bottom to top. Consumer B holds the remaining goods (the total X
-        goods in the economy minus those allocated to A). You can click and
-        drag on the chart to select any allocation. When you press the 'Run
-        Trade' button, the consumers will attempt to trade based on their
-        preferences (i.e., their utility functions). Trading stops when
-        neither consumer can make a beneficial exchange. If you run 'Random
-        Trades,' the simulation will perform multiple iterations with random
-        initial allocations. In equilibrium, you’ll observe a curve that shows
-        the boundary where trades occur. The shape of this curve reflects the
-        preferences of each consumer. At the bottom right, you can see the
-        proportion of goods Y traded per unit of good X, that is, the price of
-        goods X in terms of goods Y, the price ratio X:Y. The bottom ratio is
-        the spot price (the proportion traded in the last trade). The top
-        ratio is the average price, which should converge to equilibrium price
-        .
+        This simulation models a pure exchange economy involving two agents, A
+        and B, and two goods, X and Y, each with fixed total quantities of
+        1000 units.
+      </p>
+      <p>
+        These goods are visually represented on the
+        <a href="https://en.wikipedia.org/wiki/Edgeworth_box">Edgeworth Box</a>
+        to the right. In this chart, the quantity of good X for agent A is
+        measured from left to right, while the quantity of good Y for agent
+        A is measured from bottom to top. Agent B's holdings are determined
+        by the remaining units (total units in the economy minus agent A's
+        allocation).
+      </p>
+
+      <p>
+        To interact with the simulation, you can click and drag on the chart
+        to select any allocation of goods between agents A and B. Once your
+        desired allocation is set, pressing the 'Run Trade' button will
+        initiate the trading process. Agents will engage in trade based
+        on their utility functions—mathematical representations of their
+        preferences that reflect how much satisfaction or utility they derive
+        from various combinations of goods. Trading continues until no further
+        mutually beneficial exchanges can be made, signifying a state of
+        equilibrium.
+      </p>
+
+      <p>
+        Additionally, by using the 'Random Trades' option, the simulation will
+        execute multiple iterations, starting with different random initial
+        allocations. This helps in understanding the range of possible
+        outcomes given varied starting conditions, and can illustrate the
+        principles of Pareto efficiency—where resources cannot be reallocated
+        to make one individual better off without making another worse off.
+      </p>
+
+      <p>
+        In equilibrium, you'll observe a curve known as the contract curve.
+        It represents the set of allocations where no further
+        beneficial trades are possible for either agent. Essentially, it
+        shows the boundary of optimal trades, where both agents' utilities
+        are maximized given their constraints.
+      </p>
+
+      <p>
+        At the bottom right of the chart, the simulation displays the
+        proportion of good Y traded per unit of good X, reflecting the price
+        of good X in terms of good Y—this is the price ratio X:Y. Two specific
+        ratios are highlighted: the spot price and the average price. The spot
+        price is the ratio for the most recent trade, showing the current
+        market rate, while the average price is calculated across all trades
+        from the initial endowment, giving an indication of overall trading
+        behavior.
       </p>
     </div>
     <div class="row">
@@ -115,15 +127,15 @@
             </thead>
             <tbody>
               <tr>
-                <td>Consumer A</td>
+                <td>Agent A</td>
                 <td>
-                  <div id="ca-u-f">x^0.5 * y^0.5</div>
+                  <div id="ca-u-f">x^0.25 * y^0.75</div>
                 </td>
               </tr>
               <tr>
-                <td>Consumer B</td>
+                <td>Agent B</td>
                 <td>
-                  <div id="cb-u-f">x^0.5 * y^0.5</div>
+                  <div id="cb-u-f">x^0.75 * y^0.25</div>
                 </td>
               </tr>
             </tbody>
@@ -143,13 +155,13 @@
             </thead>
             <tbody>
               <tr>
-                <td>Consumer A</td>
+                <td>Agent A</td>
                 <td id="ca-x">-</td>
                 <td id="ca-y">-</td>
                 <td id="ca-u">-</td>
               </tr>
               <tr>
-                <td>Consumer B</td>
+                <td>Agent B</td>
                 <td id="cb-x">-</td>
                 <td id="cb-y">-</td>
                 <td id="cb-u">-</td>
@@ -174,7 +186,7 @@
                 <td>
                   <label>
                     <input type="radio" name="bids" value="random_bids" />
-                    <span>Random Bids</span>
+                    <span>Bids are proposed at random</span>
                   </label>
                 </td>
               </tr>
@@ -195,14 +207,14 @@
             </button>
           </div>
           <div class="box">
-            <div id="container" style="width: 100%; height: 100%"></div>
+            <div id="container-exchange-basic" style="width: 100%; height: 100%"></div>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="bundle.js"></script>
+  <script src="index.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 </body>
 

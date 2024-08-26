@@ -1,4 +1,4 @@
-import { isNumber } from 'lodash';
+import { isNumber, wrap } from 'lodash';
 import { isoBands, isoLines } from 'marchingsquares';
 const cache_map = {};
 
@@ -40,12 +40,17 @@ function gen_contour(u, k, v) {
 }
 
 function draw_contours(individual, translate, draw_callback, utility_level) {
+  try {
     gen_contour(individual.getUtility(), individual.getName(), utility_level).forEach((v) => {
         v.forEach((z) => {
             const u = z.map(translate);
             draw_callback(u);
         });
     });
+  }
+  catch (Exception) {
+    console.log(Exception);
+  }
 }
 
 export { draw_contours };

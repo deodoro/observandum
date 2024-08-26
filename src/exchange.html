@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pure Exchange with Multiple Parties</title>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
+      rel="stylesheet"
+    />
+
+    <style>
+      .row {
+        display: flex;
+        flex-wrap: nowrap;
+        /* Ensure columns don't wrap to maintain same height */
+      }
+
+      .left-column {
+        flex: 0 0 40%;
+        max-width: 40%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .right-column {
+        flex: 1;
+        max-width: 60%;
+        padding-left: 20px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .box {
+        flex: 1;
+        /* Allows the box to take available height */
+        width: 100%;
+        height: 100%;
+        border: none;
+        margin-top: 20px;
+        position: relative;
+      }
+
+      @media (max-width: 768px) {
+        .row {
+          flex-direction: column;
+        }
+
+        .left-column,
+        .right-column {
+          max-width: 100%;
+          flex: 100%;
+          padding-left: 0;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h1 class="center-align">Exchange with Multiple Parties</h1>
+      <div class="section">
+        <h5>This Simulation</h5>
+        <p>
+          In this simulation, multiple parties are introduced. Utilities
+          have the same function form for all agents (Cobb-Douglas), but
+          coefficients are randomized, so that agents have different
+          preferences. Endowments are also randomized at the beginning of the simulation.
+          Agents are represented by balls, the size of which is proportional to their utility.
+          When agents find partners, their color changes to indicate good or bad trades.
+          If an agent fails to trade with every other agent, it will be dimmed down
+          and will stop trading.
+        </p>
+        <p>
+          Agents will find exchange partners using the method selected
+          below: by exhausting the list of agents and finding the best
+          partner; by randomly selecting a partner and accepting the first
+          good trade; or by trading with the agents that "bump" into.
+          The order that agents trade is randomized in all cases.
+        </p>
+      </div>
+      <div class="row">
+        <div class="left-column">
+          <div class="section">
+            <h5>Utility Functions</h5>
+            <table class="highlight centered">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Utility</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Consumer A</td>
+                  <td>
+                    <div id="ca-u-f">x^0.25 * y^0.75</div>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Consumer B</td>
+                  <td>
+                    <div id="cb-u-f">x^0.75 * y^0.25</div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section">
+            <h5>Endowments</h5>
+            <table class="highlight centered">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>X</th>
+                  <th>Y</th>
+                  <th>U</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Consumer A</td>
+                  <td id="ca-x">-</td>
+                  <td id="ca-y">-</td>
+                  <td id="ca-u">-</td>
+                </tr>
+                <tr>
+                  <td>Consumer B</td>
+                  <td id="cb-x">-</td>
+                  <td id="cb-y">-</td>
+                  <td id="cb-u">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="section">
+            <h5>Bids</h5>
+            <table class="highlight">
+              <tbody>
+                <tr>
+                  <td>
+                    <label>
+                      <input
+                        type="radio"
+                        name="bids"
+                        value="use_mrs"
+                        checked="true"
+                      />
+                      <span>Bid derives from utility</span>
+                    </label>
+                  </td>
+                </tr>
+                <tr>
+                  <td>
+                    <label>
+                      <input type="radio" name="bids" value="random_bids" />
+                      <span>Bids are proposed at  random</span>
+                    </label>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="right-column">
+          <div
+            class="section"
+            style="flex: 1; display: flex; flex-direction: column"
+          >
+            <h5>Graphical Representation</h5>
+            <div>
+              <button class="btn red" id="stop-simulation">
+                Stop Simulation
+              </button>
+              <button class="btn" id="run-single-trade" disabled="true">
+                Run Single Trade
+              </button>
+            </div>
+            <div class="box">
+              <div id="container-exchange-multiple" style="width: 100%; height: 100%"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="exchange.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+  </body>
+</html>

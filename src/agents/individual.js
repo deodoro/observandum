@@ -47,7 +47,7 @@ class Trader {
 }
 
 // Individual class inheriting from Trader
-class Individual extends Trader {
+class PairedIndividual extends Trader {
     constructor(endowment, u = DYN_HOM_COBB_DOUGLAS, name, color) {
         super(endowment, u);
         this.name = name || Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
@@ -108,5 +108,5 @@ function run_trade(proposer, counterpart, bids, first_run = true) {
     }
 }
 
-export { Individual, run_trade };
+export { PairedIndividual, run_trade };
 

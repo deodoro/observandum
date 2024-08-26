@@ -2,14 +2,18 @@ const esbuild = require('esbuild');
 const copyStaticFiles = require('esbuild-copy-static-files');
 
 const buildOptions = {
-  entryPoints: ['src/index.js'],
+  entryPoints: ['src/index.js', 'src/exchange.js'],
   bundle: true,
   minify: true,
-  outfile: 'dist/bundle.js',
+  outdir: 'dist/',
   plugins: [
     copyStaticFiles({
       src: 'src/index.html',
       dest: 'dist/index.html',
+    }),
+    copyStaticFiles({
+      src: 'src/exchange.html',
+      dest: 'dist/exchange.html',
     }),
     copyStaticFiles({
       src: 'src/test.html',

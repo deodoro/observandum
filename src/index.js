@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { COBB_DOUGLAS, gradient, marginalUtility } from "./artifacts/utility";
-import { Individual, run_trade } from "./agents/individual";
+import { PairedIndividual, run_trade } from "./agents/individual";
 import { every, last, wrap } from "lodash";
 import { round } from "math";
 import { draw_contours } from "./util/contour";
@@ -25,9 +25,9 @@ const SOLUTION_PATH_COLOR = 0xec9f05;
 
 const config = {
   type: Phaser.AUTO,
-  width: document.getElementById("container").clientWidth,
-  height: document.getElementById("container").clientHeight,
-  parent: "container",
+  width: document.getElementById("container-exchange-basic").clientWidth,
+  height: document.getElementById("container-exchange-basic").clientHeight,
+  parent: "container-exchange-basic",
   scene: {
     preload: preload,
     create: create,
@@ -38,13 +38,13 @@ const game = new Phaser.Game(config);
 
 window.addEventListener("resize", () => {
   game.scale.resize(
-    document.getElementById("container").clientWidth,
-    document.getElementById("container").clientHeight,
+    document.getElementById("container-exchange-basic").clientWidth,
+    document.getElementById("container-exchange-basic").clientHeight,
   );
   adjustElements.call(
     game.scene.scenes[0],
-    document.getElementById("container").clientWidth,
-    document.getElementById("container").clientHeight,
+    document.getElementById("container-exchange-basic").clientWidth,
+    document.getElementById("container-exchange-basic").clientHeight,
   );
 });
 
@@ -222,7 +222,7 @@ function pointerMoveHandler(pointer) {
 
 function setEntitlements({ x, y }) {
   const createIndividual = (coords, weights, name, color, translate) => ({
-    individual: new Individual(coords, COBB_DOUGLAS(weights), name, color),
+    individual: new PairedIndividual(coords, COBB_DOUGLAS(weights), name, color),
     translate,
   });
 
@@ -454,6 +454,4 @@ function adjustElements(width, height) {
   );
   this.label_price.setPosition(width - 89, height - 50);
   this.label_price_accum.setPosition(width - 100, height - 70);
-  this.button.setPosition(width - 100, 50);
-  this.button_random.setPosition(width - 100, 70);
 }
