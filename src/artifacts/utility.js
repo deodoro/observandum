@@ -7,7 +7,11 @@ const DELTA = 1;
 const notZero = (x) => x.map(i => i !== 0 ? i : 1e-10);
 
 // A Cobb-Douglas function for a given set of exponents p
-const COBB_DOUGLAS = (p) => (x) => reduce(x.map((i, j) => pow(i, p[j])), (i, j) => i * j);
+const COBB_DOUGLAS = (p) => {
+  const utilityFunc = (x) => reduce(x.map((i, j) => Math.pow(i, p[j])), (i, j) => i * j);
+  utilityFunc.params = p; // Store p as a property of the function
+  return utilityFunc;
+};
 
 // A homogeneous Cobb-Douglas function for an array of length len: U = x1^1/len * x2^1/len * ... * xn^1/len
 const HOM_COBB_DOUGLAS = (len) => COBB_DOUGLAS(Array(len).fill(1 / len));

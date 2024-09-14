@@ -37,6 +37,7 @@ class Trader {
 
    bestTrade() {
       const v = gradient(this.utility, this.endowment);
+      // console.dir(`Gradient: ${v} Endowmend: ${this.endowment} Utility: ${this.utility.params}`);
       const idx = argmax(v);
       const u = v.map((_, j) =>
          j === idx ? 1 : -this.MRS(this.endowment, idx, j),
