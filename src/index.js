@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { COBB_DOUGLAS, gradient, marginalUtility } from "./artifacts/utility";
-import { PairedIndividual, run_trade } from "./agents/individual";
+import { IndividualTrader, run_trade } from "./agents/individual";
 import { every, last, wrap } from "lodash";
 import { round } from "math";
 import { draw_contours } from "./util/contour";
@@ -52,11 +52,13 @@ document.getElementById("stop-simulation").addEventListener("click", () => {
   if (game.click_random()) {
     document.getElementById("run-single-trade").disabled = true;
     document.getElementById("stop-simulation").classList.add("red");
-    document.getElementById("stop-simulation").textContent = "Stop Simulation";
+    document.getElementById("stop-simulation").textContent =
+      "Stop Simulation";
   } else {
     document.getElementById("run-single-trade").disabled = false;
     document.getElementById("stop-simulation").classList.remove("red");
-    document.getElementById("stop-simulation").textContent = "Start Simulation";
+    document.getElementById("stop-simulation").textContent =
+      "Start Simulation";
   }
   document.getElementById("run-single-trade").innerText = "Run trade";
 });
@@ -222,7 +224,12 @@ function pointerMoveHandler(pointer) {
 
 function setEntitlements({ x, y }) {
   const createIndividual = (coords, weights, name, color, translate) => ({
-    individual: new PairedIndividual(coords, COBB_DOUGLAS(weights), name, color),
+    individual: new IndividualTrader({
+      endowment: coords,
+      utility: COBB_DOUGLAS(weights),
+      name,
+      color,
+    }),
     translate,
   });
 
@@ -264,10 +271,16 @@ function updateLabels() {
 function update_body_text(c1, c2) {
   document.getElementById("ca-x").innerText = Math.round(c1.getEndowment()[0]);
   document.getElementById("ca-y").innerText = Math.round(c1.getEndowment()[1]);
-  document.getElementById("ca-u").innerText = Math.round(c1.utility(c1.getEndowment()), 2);
+  document.getElementById("ca-u").innerText = Math.round(
+    c1.utility(c1.getEndowment()),
+    2,
+  );
   document.getElementById("cb-x").innerText = Math.round(c2.getEndowment()[0]);
   document.getElementById("cb-y").innerText = Math.round(c2.getEndowment()[1]);
-  document.getElementById("cb-u").innerText = Math.round(c2.utility(c2.getEndowment()), 2);
+  document.getElementById("cb-u").innerText = Math.round(
+    c2.utility(c2.getEndowment()),
+    2,
+  );
 }
 
 function update_consumers(game) {
@@ -297,8 +310,14 @@ function update() {
     });
 
     if (this.game_state.do_trade) {
-      const { people, turn, bids, history, solution_history, solution_path } =
-        this.game_state;
+      const {
+        people,
+        turn,
+        bids,
+        history,
+        solution_history,
+        solution_path,
+      } = this.game_state;
       const currentPerson = people[turn].individual;
       const otherPerson = people[1 - turn].individual;
       const diffs =
@@ -311,7 +330,8 @@ function update() {
       const wrap_up = () => {
         const last_trade = last(history);
         const circle = new Phaser.Geom.Circle(
-          (people[0].individual.getEndowment()[0] * this.cameras.main.width) /
+          (people[0].individual.getEndowment()[0] *
+            this.cameras.main.width) /
           MAX_ENDOWMENT,
           ((MAX_ENDOWMENT - people[0].individual.getEndowment()[1]) *
             this.cameras.main.height) /
@@ -331,7 +351,8 @@ function update() {
         }
         this.game_state.do_trade = false;
         this.last_interaction = Date.now();
-        document.getElementById("run-single-trade").textContent = "RUN TRADE";
+        document.getElementById("run-single-trade").textContent =
+          "RUN TRADE";
       };
 
       if (history.length > 1 && every(diffs, (x) => Math.abs(x) < 0.1)) {
@@ -400,7 +421,8 @@ function update() {
       this.circle.x =
         (c1.getEndowment()[0] * this.cameras.main.width) / MAX_ENDOWMENT;
       this.circle.y =
-        ((MAX_ENDOWMENT - c1.getEndowment()[1]) * this.cameras.main.height) /
+        ((MAX_ENDOWMENT - c1.getEndowment()[1]) *
+          this.cameras.main.height) /
         MAX_ENDOWMENT;
       this.label_1.setPosition(
         this.circle.x,
@@ -443,7 +465,10 @@ function update() {
 }
 
 function adjustElements(width, height) {
-  this.circle.setPosition(this.cameras.main.centerX, this.cameras.main.centerY);
+  this.circle.setPosition(
+    this.cameras.main.centerX,
+    this.cameras.main.centerY,
+  );
   this.label_1.setPosition(
     this.circle.x,
     this.circle.y + this.circle.radius + 10,

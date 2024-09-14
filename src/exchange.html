@@ -1,173 +1,185 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pure Exchange with Multiple Parties</title>
-    <link
-      href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css"
-      rel="stylesheet"
-    />
 
-    <style>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pure Exchange with Multiple Parties</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css" rel="stylesheet" />
+
+  <style>
+    .row {
+      display: flex;
+      flex-wrap: nowrap;
+      /* Ensure columns don't wrap to maintain same height */
+    }
+
+    .left-column {
+      flex: 0 0 40%;
+      max-width: 40%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .right-column {
+      flex: 1;
+      max-width: 60%;
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .box {
+      position: relative;
+      width: calc(100% - 30px);
+      /* Full width minus padding */
+      max-width: 100%;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
       .row {
-        display: flex;
-        flex-wrap: nowrap;
-        /* Ensure columns don't wrap to maintain same height */
-      }
-
-      .left-column {
-        flex: 0 0 40%;
-        max-width: 40%;
-        display: flex;
         flex-direction: column;
       }
 
+      .left-column,
       .right-column {
-        flex: 1;
-        max-width: 60%;
-        padding-left: 20px;
-        display: flex;
+        max-width: 100%;
+        flex: 100%;
+        padding-left: 0;
+      }
+    }
+
+    /* Main container adjustments for Materialize padding */
+    .container {
+      margin: 0 auto;
+      max-width: 100%;
+      padding: 0 15px;
+      /* Maintain Materialize padding */
+      box-sizing: border-box;
+    }
+
+    #container-exchange-multiple {
+      width: calc(100% - 30px);
+      /* Full width minus padding */
+      aspect-ratio: 1 / 1;
+      /* Maintain a square dimension */
+      background-color: #ececec;
+      /* Placeholder background color, optional */
+      box-sizing: border-box;
+    }
+
+    .box {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .row {
         flex-direction: column;
       }
 
-      .box {
-        position: relative;
-        width: calc(100% - 30px);
-        /* Full width minus padding */
+      .left-column,
+      .right-column {
         max-width: 100%;
-        margin-top: 20px;
+        flex: 100%;
+        padding-left: 0;
       }
-
-      @media (max-width: 768px) {
-        .row {
-          flex-direction: column;
-        }
-
-        .left-column,
-        .right-column {
-          max-width: 100%;
-          flex: 100%;
-          padding-left: 0;
-        }
-      }
-
-      /* Main container adjustments for Materialize padding */
-      .container {
-        margin: 0 auto;
-        max-width: 100%;
-        padding: 0 15px;
-        /* Maintain Materialize padding */
-        box-sizing: border-box;
-      }
-
       #container-exchange-multiple {
-        width: calc(100% - 30px);
-        /* Full width minus padding */
-        aspect-ratio: 1 / 1;
-        /* Maintain a square dimension */
-        background-color: #ececec;
-        /* Placeholder background color, optional */
-        box-sizing: border-box;
-      }
-
-      .box {
         width: 100%;
-        display: flex;
-        /* Flexbox properties if needed for layout */
-        justify-content: center;
-        align-items: center;
-        margin-top: 20px;
+        aspect-ratio: 1 / 1;
+        /* Maintain square proportion in small screens */
       }
+    }
+  </style>
+</head>
 
-      @media (max-width: 768px) {
-        #container-exchange-multiple {
-          width: 100%;
-          aspect-ratio: 1 / 1;
-          /* Maintain square proportion in small screens */
-        }
-      }
-    </style>
-  </head>
-
-  <body>
-    <div class="container">
-      <h1 class="center-align">Exchange with Multiple Parties</h1>
-      <div class="section">
-        <h5>This Simulation</h5>
-        <p>
-          In this simulation, multiple parties are introduced. Utilities have
-          the same function form for all agents (Cobb-Douglas), but coefficients
-          are randomized, so that agents have different preferences. Endowments
-          are also randomized at the beginning of the simulation. Agents are
-          represented by balls, the size of which is proportional to their
-          utility. When agents find partners, their color changes to indicate
-          good or bad trades. If an agent fails to trade with every other agent,
-          it will be dimmed down and will stop trading.
-        </p>
-        <p>
-          The tatonnement process will use the method selected below: by
-          exhausting the list of agents and finding the best partner; by
-          randomly selecting a partner and accepting the first good trade; or by
-          trading with the agents that "bump" into. The order that agents trade
-          is randomized in all cases.
-        </p>
-      </div>
-      <div class="section">
-        <h5>Tatonnement</h5>
-        <table class="highlight">
-          <tbody>
-            <tr>
-              <td>
-                <label>
-                  <input
-                    type="radio"
-                    name="exhaustive"
-                    value="exhaustive"
-                    checked="true"
-                  />
-                  <span>Pick best trade from all agents</span>
-                </label>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <label>
-                  <input type="radio" name="lazy" value="lazy" />
-                  <span>Accept first good trade opportunity</span>
-                </label>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <label>
-                  <input type="radio" name="bumping" value="bumping" />
-                  <span>Try exchanges with partners that bump</span>
-                </label>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div
-        class="section"
-        style="flex: 1; display: flex; flex-direction: column"
-      >
-        <h5>Graphical Representation</h5>
-        <div>
-          <button class="btn red" id="stop-simulation">Stop Simulation</button>
+<body>
+  <div class="container">
+    <h1 class="center-align">Exchange with Multiple Parties</h1>
+    <div class="section">
+      <h5>This Simulation</h5>
+      <p>
+        In this simulation, multiple parties are introduced. Utilities have
+        the same function form for all agents (Cobb-Douglas), but coefficients
+        are randomized, so that agents have different preferences. Endowments
+        are also randomized at the beginning of the simulation. Agents are
+        represented by balls, the size of which is proportional to their
+        utility. When agents find partners, their color changes to indicate
+        good or bad trades. If an agent fails to trade with every other agent,
+        it will be dimmed down and will stop trading.
+      </p>
+      <p>
+        The tatonnement process will use the method selected below: by
+        exhausting the list of agents and finding the best partner; by
+        randomly selecting a partner and accepting the first good trade; or by
+        trading with the agents that "bump" into. The order that agents trade
+        is randomized in all cases.
+      </p>
+    </div>
+    <div class="row">
+      <div class="left-column">
+        <div class="section">
+          <h5>Tatonnement</h5>
+          <table class="highlight">
+            <tbody>
+              <tr>
+                <td>
+                  <label>
+                    <input type="radio" name="exhaustive" value="exhaustive" checked="true" />
+                    <span>Pick best trade from all agents</span>
+                  </label>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>
+                    <input type="radio" name="lazy" value="lazy" />
+                    <span>Accept first good trade opportunity</span>
+                  </label>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>
+                    <input type="radio" name="costly" value="lazy" />
+                    <span>Price search is costly</span>
+                  </label>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <label>
+                    <input type="radio" name="bumping" value="bumping" />
+                    <span>Try exchanges with partners that bump</span>
+                  </label>
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <div class="box">
-          <div
-            id="container-exchange-multiple"
-            style="width: 100%; height: 100%"
-          ></div>
+      </div>
+      <div class="right-column">
+        <div class="section" style="flex: 1; display: flex; flex-direction: column">
+          <h5>Graphical Representation</h5>
+          <div>
+            <button class="btn red" id="stop-simulation">
+              Stop Simulation
+            </button>
+          </div>
+          <div class="box">
+            <div id="container-exchange-multiple" style="width: 100%; height: 100%"></div>
+          </div>
         </div>
       </div>
     </div>
+  </div>
 
-    <script src="exchange.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-  </body>
+  <script src="exchange.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+</body>
+
 </html>
